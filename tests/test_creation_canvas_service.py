@@ -468,3 +468,24 @@ def test_material_show_uses_media_ratio_unless_size_authored(project, size, expl
     restored = next(item for item in reloaded.snapshot(pid).canvasItems if item.id == item_id)
     assert (restored.width, restored.height) == (saved.width, saved.height)
     assert restored.binding.objectRef == asset_ref(asset)
+
+
+def test_group_color_is_set_reset_and_validated(project):
+    store, pid, session = project
+    group_id = uuid4()
+    assert send(store, pid, 'canvas.show', session=session,
+        item=dict(id=group_id, projectId=pid, kind='group', color='#3e63dd')).status == 'applied'
+    group = store.snapshot(pid).canvasItems[-1]
+    assert group.color == '#3e63dd'
+    assert send(store, pid, 'canvas.update', session=session, versions=[ver('canvas_item', group)],
+        itemId=group.id, color='#30a46c').status == 'applied'
+    group = store.snapshot(pid).canvasItems[-1]
+    assert group.color == '#30a46c'
+    # An empty color restores the default, which is omitted from the item.
+    assert send(store, pid, 'canvas.update', session=session, versions=[ver('canvas_item', group)],
+        itemId=group.id, color='').status == 'applied'
+    group = store.snapshot(pid).canvasItems[-1]
+    assert group.color is None and 'color' not in group.model_dump(mode='json')
+    with pytest.raises(ValueError, match='color'):
+        send(store, pid, 'canvas.update', session=session, versions=[ver('canvas_item', group)],
+            itemId=group.id, color='blue')

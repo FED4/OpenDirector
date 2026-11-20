@@ -15,6 +15,8 @@ import { lockedNodeIds } from "../hierarchy";
 import { imageAnnotationPayload } from "../imageActionPayload";
 import { appendPendingResult, removePendingResult, validateNodeActionSource, type GenerationResultMode, type LinkedMediaResult, type ResultSource } from "../linkedResults";
 import { type CanvasNode } from "../model";
+import { groupDescendants } from "../operations";
+import { runWorkflowSteps } from "../groupWorkflow";
 import { getNodeGenerationSettings } from "../NodeComposer";
 import { serviceGenerationPlan, textGenerationPlan } from "../workspaceInteraction.ts";
 import { generationPrepareBlock } from "./entryPoints.ts";
@@ -115,8 +117,9 @@ export function useWorkspaceGeneration(rt: WorkspaceRuntime) {
     origin: ResultSource,
     _title: string,
     resultMode: GenerationResultMode = "replace",
-  ) => {
+  ): Promise<string[]> => {
     const id = crypto.randomUUID();
+    let jobIds: string[] = [];
     const run: ServiceRun = {
       controller: new AbortController(),
       unified: true,
@@ -167,7 +170,7 @@ export function useWorkspaceGeneration(rt: WorkspaceRuntime) {
         ),
       };
       change(() => configured);
-      if (!(await persist(configured))) return;
+      if (!(await persist(configured))) return [];
       run.controller.signal.throwIfAborted();
       run.phase = "submitting";
       refreshRunning();
@@ -182,8 +185,10 @@ export function useWorkspaceGeneration(rt: WorkspaceRuntime) {
         // Never abort delivery and mint a replacement command.
         for (const jobId of receipt.jobIds)
           await creationClient(origin.documentId).control(jobId, "cancel");
-      } else if (receipt.status === "accepted")
+      } else if (receipt.status === "accepted") {
+        jobIds = [...(receipt.jobIds ?? [])];
         notify(t("canvas.workspace.toast.generationSubmitted"));
+      }
     } catch (error) {
       if (!(error instanceof DOMException && error.name === "AbortError"))
         notify(errorMessage(error));
@@ -191,7 +196,7 @@ export function useWorkspaceGeneration(rt: WorkspaceRuntime) {
       serviceRuns.current.delete(id);
       refreshRunning();
     }
-    return;
+    return jobIds;
   };
   /** Submit once; the service ledger owns progress/history in both modes. */
   const runToolTask = async (origin: ResultSource, task: CanvasToolTask) => {
@@ -542,16 +547,20 @@ export function useWorkspaceGeneration(rt: WorkspaceRuntime) {
     });
     if (plan.status === "blocked") {
       notify(plan.message ?? t("canvas.workspace.error.modelUnavailable"));
-      return;
+      return Promise.resolve<string[]>([]);
     }
     const batchId = plan.count > 1 ? crypto.randomUUID() : undefined;
+    const runs: Promise<string[]>[] = [];
     for (let index = 0; index < plan.count; index++)
-      void runServiceTask(
-        { ...plan.request, batchId, executionSlot: index },
-        plan.origin,
-        plan.label,
-        index === 0 ? "replace" : "additional",
+      runs.push(
+        runServiceTask(
+          { ...plan.request, batchId, executionSlot: index },
+          plan.origin,
+          plan.label,
+          index === 0 ? "replace" : "additional",
+        ),
       );
+    return Promise.all(runs).then((ids) => ids.flat());
   };
   const cancelServiceRuns = (nodeId: string) => {
     for (const job of jobs)
@@ -587,7 +596,9 @@ export function useWorkspaceGeneration(rt: WorkspaceRuntime) {
       return;
     }
   };
-  const prepareGeneration = (nodeId: string) => {
+  /** Starts a node's generation; resolves to the accepted job IDs (none when it did not start). */
+  const prepareGeneration = (nodeId: string): Promise<string[]> => {
+    const none = Promise.resolve<string[]>([]);
     const current = historyRef.current.present;
     const node = current.nodes.find((node) => node.id === nodeId);
     if (
@@ -601,8 +612,8 @@ export function useWorkspaceGeneration(rt: WorkspaceRuntime) {
           ),
       }    )
     )
-      return;
-    if (!node) return;
+      return none;
+    if (!node) return none;
     const incoming = incomingNodes(current, nodeId);
     if (node.type === "text") {
       const plan = textGenerationPlan({
@@ -614,23 +625,73 @@ export function useWorkspaceGeneration(rt: WorkspaceRuntime) {
       });
       if (plan.status === "blocked") {
         notify(plan.message ?? t("canvas.workspace.error.agentUnavailable"));
-        return;
+        return none;
       }
-      void runServiceTask(plan.request, plan.origin, plan.label);
-      return;
+      return runServiceTask(plan.request, plan.origin, plan.label);
     }
 
     const settings = getNodeGenerationSettings(node, backendCatalog.models);
     if (settings.modelConfigId) {
       try {
-        runServiceGeneration(node, incoming);
+        return runServiceGeneration(node, incoming);
       } catch (error) {
         notify(errorMessage(error));
       }
-      return;
+      return none;
     }
     notify(
       t("canvas.workspace.error.noGenerationModel"),
+    );
+    return none;
+  };
+  /** Resolves once every job is terminal: true when at least one succeeded. */
+  const awaitJobs = (documentId: string, jobIds: readonly string[]) =>
+    new Promise<boolean>((resolve) => {
+      const client = creationClient(documentId);
+      const terminal = ["succeeded", "failed", "cancelled", "interrupted"];
+      let stop = () => {};
+      const check = () => {
+        const states = jobIds.map(
+          (id) => client.snapshot.jobs.find((job) => job.id === id)?.status,
+        );
+        if (!states.every((status) => status && terminal.includes(status))) return false;
+        stop();
+        resolve(states.includes("succeeded"));
+        return true;
+      };
+      if (!check()) stop = client.listen(() => void check());
+    });
+  /**
+   * Runs a group's generation nodes. A node waits for the group members it
+   * references and is skipped when one of them fails; independent nodes run
+   * concurrently. Material nodes and nodes without a generation setup are inputs only.
+   */
+  const runGroupWorkflow = async (groupId: string) => {
+    const document = historyRef.current.present;
+    const steps = groupDescendants(document.nodes, groupId).filter((node) =>
+      isWorkflowStep(node, document.edges.some((edge) => edge.target === node.id)),
+    );
+    if (!steps.length) {
+      notify(t("canvas.workspace.group.noRunnableNodes"));
+      return;
+    }
+    notify(t("canvas.workspace.group.workflowStarted", { count: steps.length }));
+    const result = await runWorkflowSteps(
+      steps.map((node) => node.id),
+      document.edges,
+      async (id) => {
+        const jobIds = await prepareGeneration(id);
+        return jobIds.length ? awaitJobs(document.id, jobIds) : false;
+      },
+    );
+    notify(
+      result.failed.length || result.skipped.length
+        ? t("canvas.workspace.group.workflowIncomplete", {
+            succeeded: result.succeeded.length,
+            failed: result.failed.length,
+            skipped: result.skipped.length,
+          })
+        : t("canvas.workspace.group.workflowDone", { count: steps.length }),
     );
   };
   const importActionResultFiles = async (files: File[]) => {
@@ -705,6 +766,18 @@ export function useWorkspaceGeneration(rt: WorkspaceRuntime) {
   rt.runServiceGeneration = runServiceGeneration;
   rt.cancelServiceRuns = cancelServiceRuns;
   rt.prepareGeneration = prepareGeneration;
+  rt.runGroupWorkflow = runGroupWorkflow;
   rt.importActionResultFiles = importActionResultFiles;
   rt.cancelResultImport = cancelResultImport;
+}
+
+/**
+ * Group members a workflow run generates: nodes with a configured model and a
+ * prompt (media may instead take their prompt from connected references).
+ */
+function isWorkflowStep(node: CanvasNode, referenced: boolean): boolean {
+  const prompt = Boolean(node.data.prompt?.trim() || node.data.promptContent);
+  if (node.type === "text") return Boolean(node.data.agentSettings?.modelConfigId && prompt);
+  if (!["image", "video", "audio"].includes(node.type)) return false;
+  return Boolean(node.data.settings?.modelConfigId && (prompt || referenced));
 }
