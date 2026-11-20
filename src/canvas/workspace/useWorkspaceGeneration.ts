@@ -644,46 +644,110 @@ export function useWorkspaceGeneration(rt: WorkspaceRuntime) {
     );
     return none;
   };
-  /** Resolves once every job is terminal: true when at least one succeeded. */
+  /** Latest render's generation entry point; a workflow outlives the render that started it. */
+  const prepareLatest = useRef(prepareGeneration);
+  prepareLatest.current = prepareGeneration;
+  /**
+   * Resolves once every job is terminal (true when one succeeded), or false
+   * when the canvas has switched to another project.
+   */
   const awaitJobs = (documentId: string, jobIds: readonly string[]) =>
     new Promise<boolean>((resolve) => {
       const client = creationClient(documentId);
       const terminal = ["succeeded", "failed", "cancelled", "interrupted"];
-      let stop = () => {};
+      let finish = () => {};
       const check = () => {
+        if (historyRef.current.present.id !== documentId) {
+          finish();
+          resolve(false);
+          return;
+        }
         const states = jobIds.map(
           (id) => client.snapshot.jobs.find((job) => job.id === id)?.status,
         );
-        if (!states.every((status) => status && terminal.includes(status))) return false;
-        stop();
+        if (!states.every((status) => status && terminal.includes(status))) return;
+        finish();
         resolve(states.includes("succeeded"));
-        return true;
       };
-      if (!check()) stop = client.listen(() => void check());
+      const stop = client.listen(check);
+      const poll = setInterval(check, 1000);
+      finish = () => {
+        stop();
+        clearInterval(poll);
+      };
+      check();
     });
   /**
-   * Runs a group's generation nodes. A node waits for the group members it
-   * references and is skipped when one of them fails; independent nodes run
-   * concurrently. Material nodes and nodes without a generation setup are inputs only.
+   * Waits until the canvas shows a result of these jobs on the node, so a
+   * downstream step reads the new content (for example generated text used as
+   * its prompt) rather than the previous one. Gives up after a minute.
+   */
+  const awaitDisplayed = (documentId: string, nodeId: string, jobIds: readonly string[]) =>
+    new Promise<void>((resolve) => {
+      const client = creationClient(documentId);
+      const assets = new Set(
+        client.snapshot.results
+          .filter((result) => jobIds.includes(result.jobId))
+          .map((result) => result.asset.assetId),
+      );
+      const started = Date.now();
+      const check = () => {
+        const present = historyRef.current.present;
+        const node = present.nodes.find((candidate) => candidate.id === nodeId);
+        if (
+          present.id !== documentId ||
+          !node ||
+          !assets.size ||
+          assets.has(node.data.backendAssetId ?? "") ||
+          Date.now() - started > 60_000
+        ) {
+          clearInterval(poll);
+          resolve();
+        }
+      };
+      const poll = setInterval(check, 200);
+      check();
+    });
+  /**
+   * Runs a group's generation nodes. A node waits for the members it
+   * references, directly or through non-generating nodes, and is skipped when
+   * one of them fails; independent nodes run concurrently. Submissions go one
+   * at a time, as the project's command queue would serialize them anyway, so
+   * each starts from the canvas the previous one left behind.
    */
   const runGroupWorkflow = async (groupId: string) => {
     const document = historyRef.current.present;
     const steps = groupDescendants(document.nodes, groupId).filter((node) =>
-      isWorkflowStep(node, document.edges.some((edge) => edge.target === node.id)),
+      isWorkflowStep(
+        node,
+        document.edges.some(
+          (edge) => edge.target === node.id && edge.intent !== "post_edit_result",
+        ),
+      ),
     );
     if (!steps.length) {
       notify(t("canvas.workspace.group.noRunnableNodes"));
       return;
     }
     notify(t("canvas.workspace.group.workflowStarted", { count: steps.length }));
+    let submissions: Promise<unknown> = Promise.resolve();
     const result = await runWorkflowSteps(
       steps.map((node) => node.id),
       document.edges,
       async (id) => {
-        const jobIds = await prepareGeneration(id);
-        return jobIds.length ? awaitJobs(document.id, jobIds) : false;
+        const submitted = submissions.then(() =>
+          historyRef.current.present.id === document.id
+            ? prepareLatest.current(id)
+            : [],
+        );
+        submissions = submitted.catch(() => undefined);
+        const jobIds = await submitted;
+        if (!jobIds.length || !(await awaitJobs(document.id, jobIds))) return false;
+        await awaitDisplayed(document.id, id, jobIds);
+        return true;
       },
     );
+    if (historyRef.current.present.id !== document.id) return;
     notify(
       result.failed.length || result.skipped.length
         ? t("canvas.workspace.group.workflowIncomplete", {
@@ -776,7 +840,7 @@ export function useWorkspaceGeneration(rt: WorkspaceRuntime) {
  * prompt (media may instead take their prompt from connected references).
  */
 function isWorkflowStep(node: CanvasNode, referenced: boolean): boolean {
-  const prompt = Boolean(node.data.prompt?.trim() || node.data.promptContent);
+  const prompt = Boolean(node.data.prompt?.trim() || node.data.promptContent?.length);
   if (node.type === "text") return Boolean(node.data.agentSettings?.modelConfigId && prompt);
   if (!["image", "video", "audio"].includes(node.type)) return false;
   return Boolean(node.data.settings?.modelConfigId && (prompt || referenced));

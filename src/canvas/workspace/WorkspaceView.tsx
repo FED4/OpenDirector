@@ -411,10 +411,11 @@ export function WorkspaceView({ rt }: { rt: WorkspaceRuntime }) {
 
   // Canvas locking is no longer offered. Projects saved while it was available
   // are unlocked once when they open, parents first: a locked group blocks its
-  // children. Locks applied later through the API or Agent keep their meaning.
+  // children. Locks applied later through the API or Agent keep their meaning
+  // and can be released from the context menu.
   const unlockedOnOpen = useRef<string | null>(null);
   useEffect(() => {
-    if (unlockedOnOpen.current === doc.id || !doc.nodes.length) return;
+    if (unlockedOnOpen.current === doc.id) return;
     unlockedOnOpen.current = doc.id;
     const locked = orderNodesForCanvas(doc.nodes).filter((node) => node.locked);
     if (!locked.length) return;
@@ -1526,7 +1527,13 @@ export function WorkspaceView({ rt }: { rt: WorkspaceRuntime }) {
             onUngroup={single.type === "group" ? ungroup : undefined}
             onLayout={
               single.type === "group"
-                ? (layout: GroupLayout) => change((d) => layoutGroup(d, single.id, layout))
+                ? (layout: GroupLayout) => {
+                    if (doc.nodes.some((node) => node.parentId === single.id && lockedIds.has(node.id))) {
+                      notify(t("canvas.workspace.toast.unlockFirst"));
+                      return;
+                    }
+                    change((d) => layoutGroup(d, single.id, layout));
+                  }
                 : undefined
             }
             onGroupColor={
@@ -1950,6 +1957,22 @@ export function WorkspaceView({ rt }: { rt: WorkspaceRuntime }) {
                 })),
               )}
               <hr />
+              {/* Locking is not offered, but a node locked by the Agent, the API or an
+                  undo of the open-time unlock must still be recoverable. */}
+              {selected.some((id) => lockedIds.has(id)) &&
+                menuButton(t("canvas.workspace.menu.unlock"), "unlock", () => {
+                  const byId = new Map(doc.nodes.map((node) => [node.id, node]));
+                  const targets = new Set<string>();
+                  for (const id of selected)
+                    for (let node = byId.get(id); node; node = node.parentId ? byId.get(node.parentId) : undefined)
+                      if (node.locked) targets.add(node.id);
+                  command({
+                    type: "batch",
+                    commands: orderNodesForCanvas(doc.nodes)
+                      .filter((node) => targets.has(node.id))
+                      .map((node) => ({ type: "update-node" as const, id: node.id, patch: { locked: false } })),
+                  });
+                })}
               {single?.type === "stack" &&
                 menuButton(t("canvas.workspace.menu.unstack"), "stack", () =>
                   change((d) => unstackSelection(d, selected)),

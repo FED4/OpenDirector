@@ -55,7 +55,7 @@ test("a failure skips its downstream chain but not unrelated steps", async () =>
   assert.ok(!h.events.includes("start:b"));
 });
 
-test("reference cycles are skipped; edges to non-steps and edit provenance are ignored", async () => {
+test("reference cycles are skipped; inputs-only nodes and edit provenance add no dependency", async () => {
   const h = harness();
   const run = runWorkflowSteps(
     ["a", "b", "c"],
@@ -64,6 +64,17 @@ test("reference cycles are skipped; edges to non-steps and edit provenance are i
   );
   await h.finish("c");
   assert.deepEqual(await run, { succeeded: ["c"], failed: [], skipped: ["a", "b"] });
+});
+
+test("a dependency carried through a non-step node still orders the steps", async () => {
+  const h = harness();
+  // image a -> subject s -> video b: b must wait for a.
+  const run = runWorkflowSteps(["a", "b"], [edge("a", "s"), edge("s", "b")], h.runStep);
+  await new Promise((resolve) => setTimeout(resolve, 1));
+  assert.deepEqual(h.events, ["start:a"]);
+  await h.finish("a");
+  await h.finish("b");
+  assert.deepEqual(await run, { succeeded: ["a", "b"], failed: [], skipped: [] });
 });
 
 test("a step that throws counts as failed", async () => {

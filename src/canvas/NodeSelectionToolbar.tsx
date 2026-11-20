@@ -555,13 +555,13 @@ export function NodeSelectionToolbar({
                 }
                 shortcut={action.id === "output" ? (navigator.platform.includes("Mac") ? "⌘ Enter" : "Ctrl Enter") : undefined}
                 label={
-                  action.disabled
+                  action.disabled && locked
                     ? t("canvas.selection.locked", { label: action.label })
                     : action.label
                 }
                 tooltipSide="top"
                 // Labelled buttons already show their text; only icons and lock reasons need a tooltip.
-                showTooltip={Boolean(action.iconOnly || action.disabled)}
+                showTooltip={Boolean(action.iconOnly || (action.disabled && locked))}
                 className={`${action.iconOnly ? "is-icon-only" : ""}${action.destructive ? " is-destructive" : ""}`}
                 disabled={action.disabled}
                 onClick={(event) => {
@@ -650,7 +650,8 @@ export function NodeSelectionToolbar({
               <TooltipButton
                 key={option.id}
                 data-action={option.id}
-                role="menuitem"
+                role={option.checked === undefined ? "menuitem" : "menuitemradio"}
+                aria-checked={option.checked}
                 aria-label={option.label}
                 label={
                   option.disabled

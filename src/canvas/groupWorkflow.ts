@@ -9,7 +9,7 @@ export interface WorkflowOutcome {
 
 /**
  * Runs workflow steps in reference order. A step starts once every step it
- * references has succeeded; steps without pending references run
+ * references, directly or through non-step nodes, has succeeded; steps without pending references run
  * concurrently. A failure skips everything downstream of it.
  */
 export async function runWorkflowSteps(
@@ -18,15 +18,27 @@ export async function runWorkflowSteps(
   runStep: (id: string) => Promise<boolean>,
 ): Promise<WorkflowOutcome> {
   const ids = new Set(stepIds);
-  const upstream = new Map(stepIds.map((id) => [id, new Set<string>()]));
+  const sources = new Map<string, string[]>();
   for (const edge of edges)
-    if (
-      edge.intent !== "post_edit_result" &&
-      edge.source !== edge.target &&
-      ids.has(edge.source) &&
-      ids.has(edge.target)
-    )
-      upstream.get(edge.target)!.add(edge.source);
+    if (edge.intent !== "post_edit_result" && edge.source !== edge.target)
+      sources.set(edge.target, [...(sources.get(edge.target) ?? []), edge.source]);
+  // A step depends on the nearest steps upstream of it, also through
+  // non-step nodes such as a subject or stack that carries a result onward.
+  const upstream = new Map(
+    stepIds.map((id) => {
+      const found = new Set<string>();
+      const seen = new Set([id]);
+      const pending = [...(sources.get(id) ?? [])];
+      while (pending.length) {
+        const node = pending.pop()!;
+        if (seen.has(node)) continue;
+        seen.add(node);
+        if (ids.has(node)) found.add(node);
+        else pending.push(...(sources.get(node) ?? []));
+      }
+      return [id, found];
+    }),
+  );
   const outcome = new Map<string, "succeeded" | "failed" | "skipped">();
   const started = new Set<string>();
   let running = 0;

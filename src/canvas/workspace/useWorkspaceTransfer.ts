@@ -627,9 +627,10 @@ export function useWorkspaceTransfer(rt: WorkspaceRuntime) {
           ).replace(/[\\/]/g, "_");
           const dot = name.lastIndexOf(".");
           const [stem, extension] = dot > 0 ? [name.slice(0, dot), name.slice(dot)] : [name, ""];
+          // Names differing only in case collide when extracted on macOS or Windows.
           let path = name;
-          for (let index = 2; used.has(path); index++) path = `${stem} (${index})${extension}`;
-          used.add(path);
+          for (let index = 2; used.has(path.toLowerCase()); index++) path = `${stem} (${index})${extension}`;
+          used.add(path.toLowerCase());
           return { path, data: new Uint8Array(await blob.arrayBuffer()) };
         }),
       );
