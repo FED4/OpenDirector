@@ -423,6 +423,9 @@ test("a regenerated node stays busy until its delivered result is displayed", ()
   const shown = { ...node, data: { ...node.data, backendAssetId: "new-asset" } };
   assert.deepEqual(jobActivities([job], "doc", [shown]), []);
   assert.deepEqual(jobActivities([job], "doc", []), []);
+  // Local text edits clear the backend asset; such a node is not waiting.
+  const edited = { ...node, data: { ...node.data, backendAssetId: undefined } };
+  assert.deepEqual(jobActivities([job], "doc", [edited]), []);
   // A succeeded job whose result is not the node's current content stays idle.
   assert.deepEqual(jobActivities([{ ...job, deliveredAssetId: undefined }], "doc", [node]), []);
 });

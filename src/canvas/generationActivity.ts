@@ -12,12 +12,14 @@ export function jobActivities(
   const displayed = new Map(nodes.map((node) => [node.id, node.data.backendAssetId]));
   return jobs.flatMap((job) => {
     // A regenerated node keeps its old media until the new result has loaded;
-    // stay busy until then rather than briefly revealing the old image.
+    // stay busy until then rather than briefly revealing the old image. A node
+    // without a backend asset (new, or locally edited text) is not waiting.
+    const shown = displayed.get(job.nodeId);
     const delivering = Boolean(
       job.status === "succeeded" &&
       job.deliveredAssetId &&
-      displayed.has(job.nodeId) &&
-      displayed.get(job.nodeId) !== job.deliveredAssetId,
+      shown &&
+      shown !== job.deliveredAssetId,
     );
     const finishing = delivering || Boolean(
       job.toolTask &&
