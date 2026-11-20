@@ -403,3 +403,26 @@ test("history polling and reloads learn each successful duration sample only onc
     else Reflect.deleteProperty(globalThis, "localStorage");
   }
 });
+
+test("a regenerated node stays busy until its delivered result is displayed", () => {
+  const node = createNode("image");
+  node.data.backendAssetId = "old-asset";
+  const job = {
+    id: "job",
+    nodeId: node.id,
+    title: "regenerate",
+    status: "succeeded" as const,
+    time: "",
+    outputKind: "image" as const,
+    deliveredAssetId: "new-asset",
+  };
+  const [activity] = jobActivities([job], "doc", [node]);
+  assert.equal(activity?.phase, "finishing");
+  assert.equal(activity?.nodeId, node.id);
+  // Once the canvas shows the new asset, or the node is gone, nothing is pending.
+  const shown = { ...node, data: { ...node.data, backendAssetId: "new-asset" } };
+  assert.deepEqual(jobActivities([job], "doc", [shown]), []);
+  assert.deepEqual(jobActivities([job], "doc", []), []);
+  // A succeeded job whose result is not the node's current content stays idle.
+  assert.deepEqual(jobActivities([{ ...job, deliveredAssetId: undefined }], "doc", [node]), []);
+});

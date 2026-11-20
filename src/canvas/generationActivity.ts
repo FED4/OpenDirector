@@ -1,14 +1,25 @@
 import type { BackendTask } from "../backend/generation.ts";
 import type { GenerationJob } from "./generationHistory.ts";
+import type { CanvasNode } from "./model.ts";
 import { expectedDuration } from "./generationDurations.ts";
 
 /** Display ownership may differ from the source retained by task/history APIs. */
 export function jobActivities(
   jobs: readonly GenerationJob[],
   documentId: string,
+  nodes: readonly CanvasNode[] = [],
 ): ActiveGeneration[] {
+  const displayed = new Map(nodes.map((node) => [node.id, node.data.backendAssetId]));
   return jobs.flatMap((job) => {
-    const finishing = Boolean(
+    // A regenerated node keeps its old media until the new result has loaded;
+    // stay busy until then rather than briefly revealing the old image.
+    const delivering = Boolean(
+      job.status === "succeeded" &&
+      job.deliveredAssetId &&
+      displayed.has(job.nodeId) &&
+      displayed.get(job.nodeId) !== job.deliveredAssetId,
+    );
+    const finishing = delivering || Boolean(
       job.toolTask &&
       job.status === "succeeded" &&
       job.toolTask.placement === "pending",

@@ -169,6 +169,7 @@ export function useWorkspaceRuntime(): WorkspaceRuntime {
           ...jobActivities(
             jobs.filter((job) => !job.tool),
             doc.id,
+            doc.nodes,
           ),
           ...jobActivities(
             jobs.filter((job) => job.tool),
@@ -177,7 +178,7 @@ export function useWorkspaceRuntime(): WorkspaceRuntime {
         ],
         doc.id,
       ),
-    [activeGenerations, doc.id, jobs],
+    [activeGenerations, doc.id, doc.nodes, jobs],
   );
   const clipboard = useRef<CanvasFragment | null>(null);
   const clipboardMedia = useRef<ClipboardMedia | null>(null);
