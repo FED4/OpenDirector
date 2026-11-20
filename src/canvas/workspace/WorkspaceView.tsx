@@ -410,11 +410,14 @@ export function WorkspaceView({ rt }: { rt: WorkspaceRuntime }) {
   };
 
   // Canvas locking is no longer offered. Projects saved while it was available
-  // are unlocked on open, parents first: a locked group blocks its children.
-  const lockedCount = doc.nodes.filter((node) => node.locked).length;
+  // are unlocked once when they open, parents first: a locked group blocks its
+  // children. Locks applied later through the API or Agent keep their meaning.
+  const unlockedOnOpen = useRef<string | null>(null);
   useEffect(() => {
-    if (!lockedCount) return;
+    if (unlockedOnOpen.current === doc.id || !doc.nodes.length) return;
+    unlockedOnOpen.current = doc.id;
     const locked = orderNodesForCanvas(doc.nodes).filter((node) => node.locked);
+    if (!locked.length) return;
     command({
       type: "batch",
       commands: locked.map((node) => ({
@@ -423,7 +426,7 @@ export function WorkspaceView({ rt }: { rt: WorkspaceRuntime }) {
         patch: { locked: false },
       })),
     });
-  }, [doc.id, lockedCount]);
+  }, [doc.id, doc.nodes]);
 
   const desktop = !!window.opendirectorDesktop;
   const [desktopSidebarOpen, setDesktopSidebarOpen] = useState(() => {
