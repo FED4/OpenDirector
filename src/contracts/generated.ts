@@ -1960,7 +1960,7 @@ export interface CanvasPresentationUpdate extends Contract {
   readonly height: number | null;
   readonly zIndex: number | null;
   readonly locked: boolean | null;
-  readonly color: string | null;
+  readonly color?: string | null;
   readonly parentId: string | null;
 }
 

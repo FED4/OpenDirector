@@ -109,7 +109,8 @@ class CanvasPresentationUpdate(Contract):
     height: Positive | None = Field(default=None, description='Height in pixels.')
     zIndex: int | None = Field(default=None, strict=True, description='Canvas stacking order.')
     locked: bool | None = Field(default=None, description='Whether edits to this object are blocked.')
-    color: CanvasColor | None = Field(default=None, description="Group background color in #RRGGBB format, or '' for the default.")
+    # Omitted when unset so commands recorded before this field keep their fingerprint.
+    color: CanvasColor | None = Field(default=None, exclude_if=lambda value: value is None, description="Group background color in #RRGGBB format, or '' for the default.")
     parentId: UUID | None = Field(default=None, description='Parent canvas group ID, or null for the root.')
     # Presence of parentId distinguishes retaining a group from ungrouping.
 

@@ -18949,7 +18949,6 @@
           "height",
           "zIndex",
           "locked",
-          "color",
           "parentId"
         ],
         "title": "CanvasPresentationUpdate",
