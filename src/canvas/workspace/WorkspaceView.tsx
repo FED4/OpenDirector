@@ -409,14 +409,22 @@ export function WorkspaceView({ rt }: { rt: WorkspaceRuntime }) {
     );
   };
 
-  // Canvas locking is no longer offered. Projects saved while it was available
-  // are unlocked once when they open, parents first: a locked group blocks its
-  // children. Locks applied later through the API or Agent keep their meaning
-  // and can be released from the context menu.
+  // Canvas locking is no longer offered. Locks saved while it was available are
+  // released the first time this browser opens the project, parents first (a
+  // locked group blocks its children). Later locks from the Agent or the API
+  // are kept and can be released from the context menu.
   const unlockedOnOpen = useRef<string | null>(null);
   useEffect(() => {
-    if (unlockedOnOpen.current === doc.id) return;
+    // The startup placeholder and empty projects have nothing to release.
+    if (unlockedOnOpen.current === doc.id || !doc.nodes.length) return;
     unlockedOnOpen.current = doc.id;
+    const key = `opendirector.legacyLocksReleased:${doc.id}`;
+    try {
+      if (localStorage.getItem(key)) return;
+      localStorage.setItem(key, "1");
+    } catch {
+      return; // Without storage the open-time release could repeat; keep locks.
+    }
     const locked = orderNodesForCanvas(doc.nodes).filter((node) => node.locked);
     if (!locked.length) return;
     command({

@@ -657,7 +657,7 @@ export function useWorkspaceGeneration(rt: WorkspaceRuntime) {
       const terminal = ["succeeded", "failed", "cancelled", "interrupted"];
       let finish = () => {};
       const check = () => {
-        if (historyRef.current.present.id !== documentId) {
+        if (!mounted.current || historyRef.current.present.id !== documentId) {
           finish();
           resolve(false);
           return;
@@ -678,32 +678,40 @@ export function useWorkspaceGeneration(rt: WorkspaceRuntime) {
       check();
     });
   /**
-   * Waits until the canvas shows a result of these jobs on the node, so a
-   * downstream step reads the new content (for example generated text used as
-   * its prompt) rather than the previous one. Gives up after a minute.
+   * Waits until the canvas shows the result the service adopted for the node,
+   * so a downstream step reads the new content (for example generated text
+   * used as its prompt). Resolves false when no result was adopted (a
+   * candidate-only result, or inputs edited while running), after three
+   * minutes, or when the canvas switched project.
    */
   const awaitDisplayed = (documentId: string, nodeId: string, jobIds: readonly string[]) =>
-    new Promise<void>((resolve) => {
-      const client = creationClient(documentId);
+    new Promise<boolean>((resolve) => {
+      const snapshot = creationClient(documentId).snapshot;
+      const adopted = new Set(
+        snapshot.jobs.filter((job) => jobIds.includes(job.id) && job.adopted).map((job) => job.id),
+      );
       const assets = new Set(
-        client.snapshot.results
-          .filter((result) => jobIds.includes(result.jobId))
+        snapshot.results
+          .filter((result) => adopted.has(result.jobId))
           .map((result) => result.asset.assetId),
       );
+      if (!assets.size) {
+        resolve(false);
+        return;
+      }
       const started = Date.now();
       const check = () => {
         const present = historyRef.current.present;
         const node = present.nodes.find((candidate) => candidate.id === nodeId);
-        if (
-          present.id !== documentId ||
-          !node ||
-          !assets.size ||
-          assets.has(node.data.backendAssetId ?? "") ||
-          Date.now() - started > 60_000
-        ) {
-          clearInterval(poll);
-          resolve();
-        }
+        const done =
+          present.id === documentId && node && assets.has(node.data.backendAssetId ?? "")
+            ? true
+            : !mounted.current || present.id !== documentId || !node || Date.now() - started > 180_000
+              ? false
+              : undefined;
+        if (done === undefined) return;
+        clearInterval(poll);
+        resolve(done);
       };
       const poll = setInterval(check, 200);
       check();
@@ -743,8 +751,7 @@ export function useWorkspaceGeneration(rt: WorkspaceRuntime) {
         submissions = submitted.catch(() => undefined);
         const jobIds = await submitted;
         if (!jobIds.length || !(await awaitJobs(document.id, jobIds))) return false;
-        await awaitDisplayed(document.id, id, jobIds);
-        return true;
+        return awaitDisplayed(document.id, id, jobIds);
       },
     );
     if (historyRef.current.present.id !== document.id) return;

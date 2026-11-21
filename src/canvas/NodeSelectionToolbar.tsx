@@ -225,10 +225,10 @@ export function NodeSelectionToolbar({
         label: workflowRunning ? t("canvas.selection.group.running") : t("canvas.selection.group.run"),
         icon: "play",
         run: onRunWorkflow,
-        disabled: workflowRunning,
+        disabled: workflowRunning || locked,
       });
     if (onUngroup)
-      editing.push({ id: "ungroup", label: t("canvas.selection.group.ungroup"), icon: "group", run: onUngroup });
+      editing.push({ id: "ungroup", label: t("canvas.selection.group.ungroup"), icon: "group", run: onUngroup, disabled: locked });
     if (onLayout)
       addMenu("layout", t("canvas.selection.group.layout"), "grid", [
         { id: "grid", label: t("canvas.selection.group.layoutGrid"), icon: "grid", run: () => onLayout("grid") },
