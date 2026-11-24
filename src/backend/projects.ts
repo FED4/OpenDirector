@@ -38,11 +38,27 @@ function renewLease(projectId: string) {
 
 // A write rejected for a lapsed lease renews the visible project's lease and is
 // resent once. Only the active project is renewed: a stale editor must never
-// move the lease back to a project this page has left.
-setLeaseRecovery(async (projectId) => {
-  if (active !== projectId) return false;
-  await renewLease(projectId);
-  return active === projectId;
+// move the lease back to a project this page has left. The renewal runs in the
+// session-change queue, like the heartbeat, so it cannot land after a queued
+// close or switch has released the project. Writes rejected together share one
+// renewal. No queued operation issues a lease-checked write, so this cannot
+// wait on itself.
+let recovering: { projectId: string; renewed: Promise<boolean> } | null = null;
+setLeaseRecovery((projectId) => {
+  if (recovering?.projectId === projectId) return recovering.renewed;
+  const renewed = serializeSessionChange(async () => {
+    if (active !== projectId) return false;
+    await renewLease(projectId);
+    return active === projectId;
+  });
+  const current = { projectId, renewed };
+  recovering = current;
+  void renewed
+    .finally(() => {
+      if (recovering === current) recovering = null;
+    })
+    .catch(() => {});
+  return renewed;
 });
 
 function keepAlive() {
