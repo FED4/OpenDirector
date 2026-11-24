@@ -196,9 +196,17 @@ async def mask_composite(ctx: ToolContext):
         info = await blocking(media.video_info, raw)
         if info['duration'] * info['fps'] > COMPOSITE_MAX_FRAMES:
             raise ProjectError(f'遮罩合成单次最多处理 {COMPOSITE_MAX_FRAMES} 帧，请先裁剪视频。', 422)
+        mask_raw = work.write('mask', mask.data)
+        mask_info = await blocking(media.video_info, mask_raw)
+        # Frames are paired by index, so the mask must share the content's timeline
+        # (e.g. both made from the same source clip); otherwise the mask drifts silently.
+        if abs(mask_info['fps'] - info['fps']) > 0.01:
+            raise ProjectError('遮罩视频与内容视频的帧率不一致，请使用由同一段视频生成的遮罩。', 422)
         await ctx.progress('正在读取画面和遮罩')
         frames = await blocking(media.frames_of, raw, work.path / 'content-frames')
-        mattes = await blocking(media.frames_of, work.write('mask', mask.data), work.path / 'mask-frames', gray=True)
+        mattes = await blocking(media.frames_of, mask_raw, work.path / 'mask-frames', gray=True)
+        if abs(len(frames) - len(mattes)) > 1:
+            raise ProjectError('遮罩视频与内容视频的帧数不一致，请使用由同一段视频生成的遮罩。', 422)
         await ctx.progress('正在合成')
         await blocking(composite_frames, frames, mattes, work.path / 'composite', stretch=stretch)
         data = await blocking(media.encode_frames, str(work.path / 'composite' / '%05d.png'), info['fps'], work.path / 'composite.mp4')

@@ -1073,3 +1073,19 @@ def test_mask_composite_keeps_content_inside_the_mask_and_stretches_it(project, 
     task = run(store, configs, None, project_id, session,
                {'tool': 'video-mask-composite', 'sourceAssetIds': [depth], 'parameters': {}})
     assert task['status'] == 'failed' and '两个视频' in task['error']
+
+
+def test_mask_composite_rejects_a_mask_on_another_timeline(project):
+    store, project_id, session = project
+    depth = upload(store, project_id, session, 'depth.mp4', gray_mp4(1))
+    configs = configure(store)
+    # Frames are paired by index: another frame rate or length would drift the mask off the person.
+    other_rate = subprocess.run(['ffmpeg', '-v', 'error', '-f', 'lavfi', '-i', 'color=c=white:size=64x36:rate=30', '-t', '1',
+                                 '-pix_fmt', 'yuv420p', '-f', 'mp4', '-movflags', 'frag_keyframe+empty_moov', 'pipe:1'],
+                                capture_output=True, check=True).stdout
+    shorter = gray_mp4(0.5, color='white')
+    for name, video, reason in (('rate.mp4', other_rate, '帧率'), ('short.mp4', shorter, '帧数')):
+        mask = upload(store, project_id, session, name, video)
+        task = run(store, configs, None, project_id, session,
+                   {'tool': 'video-mask-composite', 'sourceAssetIds': [depth, mask], 'parameters': {}})
+        assert task['status'] == 'failed' and reason in task['error'], task['error']
