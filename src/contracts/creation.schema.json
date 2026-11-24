@@ -5392,7 +5392,8 @@
               "reference",
               "first_frame",
               "last_frame",
-              "continuation"
+              "continuation",
+              "control"
             ],
             "title": "Role",
             "type": "string"
@@ -7112,7 +7113,8 @@
               "enum": [
                 "first_frame",
                 "reference",
-                "continuation"
+                "continuation",
+                "control"
               ],
               "type": "string"
             },
@@ -8253,6 +8255,7 @@
               "video-matting",
               "video-crop",
               "video-translation",
+              "video-mask-composite",
               "extract-audio",
               "audio-separation",
               "video-trim",
@@ -9743,7 +9746,8 @@
               "reference",
               "first_frame",
               "last_frame",
-              "continuation"
+              "continuation",
+              "control"
             ],
             "title": "Role",
             "type": "string"
@@ -10801,7 +10805,8 @@
               "reference",
               "first_frame",
               "last_frame",
-              "continuation"
+              "continuation",
+              "control"
             ],
             "title": "Role",
             "type": "string"
@@ -11131,7 +11136,8 @@
               "reference",
               "first_frame",
               "last_frame",
-              "continuation"
+              "continuation",
+              "control"
             ],
             "title": "Role",
             "type": "string"
@@ -15146,7 +15152,8 @@
             "enum": [
               "first_frame",
               "reference",
-              "continuation"
+              "continuation",
+              "control"
             ],
             "title": "Videomode",
             "type": "string"
@@ -21535,7 +21542,8 @@
               "reference",
               "first_frame",
               "last_frame",
-              "continuation"
+              "continuation",
+              "control"
             ],
             "title": "Role",
             "type": "string"
@@ -23345,7 +23353,8 @@
               "enum": [
                 "first_frame",
                 "reference",
-                "continuation"
+                "continuation",
+                "control"
               ],
               "type": "string"
             },
@@ -24535,6 +24544,7 @@
               "video-matting",
               "video-crop",
               "video-translation",
+              "video-mask-composite",
               "extract-audio",
               "audio-separation",
               "video-trim",
@@ -26052,7 +26062,8 @@
               "reference",
               "first_frame",
               "last_frame",
-              "continuation"
+              "continuation",
+              "control"
             ],
             "title": "Role",
             "type": "string"
@@ -27147,7 +27158,8 @@
               "reference",
               "first_frame",
               "last_frame",
-              "continuation"
+              "continuation",
+              "control"
             ],
             "title": "Role",
             "type": "string"
@@ -27487,7 +27499,8 @@
               "reference",
               "first_frame",
               "last_frame",
-              "continuation"
+              "continuation",
+              "control"
             ],
             "title": "Role",
             "type": "string"
@@ -31676,7 +31689,8 @@
             "enum": [
               "first_frame",
               "reference",
-              "continuation"
+              "continuation",
+              "control"
             ],
             "title": "Videomode",
             "type": "string"
