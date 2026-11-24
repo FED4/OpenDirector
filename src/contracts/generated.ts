@@ -714,7 +714,7 @@ export interface InputRulesInput extends ContractInput {
   readonly imageBytes: number;
   readonly videoBytes: number;
   readonly requestBytes: number;
-  readonly videoModes: ReadonlyArray<"first_frame" | "reference" | "continuation">;
+  readonly videoModes: ReadonlyArray<"first_frame" | "reference" | "continuation" | "control">;
   readonly imageOutputs?: ReadonlyArray<ImageOutputInput>;
   readonly imageQualities?: ReadonlyArray<"auto" | "low" | "medium" | "high"> | null;
   readonly outputResolutions?: ReadonlyArray<string>;
@@ -818,7 +818,7 @@ export interface MediaCanvasItemInput extends CanvasItemBaseInput {
 }
 
 export interface MediaEditDataInput extends ContractInput {
-  readonly tool: "layers" | "crop" | "smart-edit" | "outpaint" | "cutout" | "inpainting-remove" | "image-hd" | "view-control" | "lighting" | "layer-decompose" | "panorama" | "product-replacement" | "multi-size" | "dynamic-poster" | "ecommerce-main" | "image-presets" | "grid-split" | "composition" | "annotation" | "video-edit" | "video-extend" | "video-partial-reshoot" | "video-upscale" | "video-frame-interpolation" | "video-depth-capture" | "video-subtitle-erasure" | "video-matting" | "video-crop" | "video-translation" | "extract-audio" | "audio-separation" | "video-trim" | "audio-trim" | "video-frame-capture" | "director-stage";
+  readonly tool: "layers" | "crop" | "smart-edit" | "outpaint" | "cutout" | "inpainting-remove" | "image-hd" | "view-control" | "lighting" | "layer-decompose" | "panorama" | "product-replacement" | "multi-size" | "dynamic-poster" | "ecommerce-main" | "image-presets" | "grid-split" | "composition" | "annotation" | "video-edit" | "video-extend" | "video-partial-reshoot" | "video-upscale" | "video-frame-interpolation" | "video-depth-capture" | "video-subtitle-erasure" | "video-matting" | "video-crop" | "video-translation" | "video-mask-composite" | "extract-audio" | "audio-separation" | "video-trim" | "audio-trim" | "video-frame-capture" | "director-stage";
   readonly sources?: ReadonlyArray<AssetRefInput>;
   readonly sourceItems?: ReadonlyArray<string>;
   readonly parameters?: Readonly<Record<string, string | boolean | number>>;
@@ -1095,7 +1095,7 @@ export interface ReferenceAddCommandOperationInput {
 
 export interface ReferenceBaseInput extends ProjectEntityInput {
   readonly targetSpecId: string;
-  readonly role?: "reference" | "first_frame" | "last_frame" | "continuation";
+  readonly role?: "reference" | "first_frame" | "last_frame" | "continuation" | "control";
   readonly order?: number;
   readonly active?: boolean;
 }
@@ -1140,7 +1140,7 @@ export interface ReferenceWriteInput extends ContractInput {
 
 export interface ResolvedReferenceInput extends ContractInput {
   readonly referenceId: string;
-  readonly role: "reference" | "first_frame" | "last_frame" | "continuation";
+  readonly role: "reference" | "first_frame" | "last_frame" | "continuation" | "control";
   readonly asset: AssetRefInput;
   readonly metadata: MediaMetadataInput;
   readonly sourceVersion?: ObjectVersionInput | null;
@@ -1584,7 +1584,7 @@ export interface VideoOutputInput {
 
 export interface VideoParametersInput extends ContractInput {
   readonly generateAudio?: boolean;
-  readonly videoMode?: "first_frame" | "reference" | "continuation";
+  readonly videoMode?: "first_frame" | "reference" | "continuation" | "control";
   readonly durationSeconds?: number | null;
   readonly aspectRatio?: string | null;
   readonly resolution?: string;
@@ -1649,7 +1649,7 @@ export type RoleActionInput = "configure_generation" | "save_manual_text" | "upl
 
 export type ModelKindInput = "agent" | "image" | "video" | "audio" | "vision";
 
-export type VideoModeInput = "first_frame" | "reference" | "continuation";
+export type VideoModeInput = "first_frame" | "reference" | "continuation" | "control";
 
 export interface ArtifactPublish extends Contract {
   readonly path: string;
@@ -2363,7 +2363,7 @@ export interface InputRules extends Contract {
   readonly imageBytes: number;
   readonly videoBytes: number;
   readonly requestBytes: number;
-  readonly videoModes: ReadonlyArray<"first_frame" | "reference" | "continuation">;
+  readonly videoModes: ReadonlyArray<"first_frame" | "reference" | "continuation" | "control">;
   readonly imageOutputs: ReadonlyArray<ImageOutput>;
   readonly imageQualities?: ReadonlyArray<"auto" | "low" | "medium" | "high"> | null;
   readonly outputResolutions: ReadonlyArray<string>;
@@ -2467,7 +2467,7 @@ export interface MediaCanvasItem extends CanvasItemBase {
 }
 
 export interface MediaEditData extends Contract {
-  readonly tool: "layers" | "crop" | "smart-edit" | "outpaint" | "cutout" | "inpainting-remove" | "image-hd" | "view-control" | "lighting" | "layer-decompose" | "panorama" | "product-replacement" | "multi-size" | "dynamic-poster" | "ecommerce-main" | "image-presets" | "grid-split" | "composition" | "annotation" | "video-edit" | "video-extend" | "video-partial-reshoot" | "video-upscale" | "video-frame-interpolation" | "video-depth-capture" | "video-subtitle-erasure" | "video-matting" | "video-crop" | "video-translation" | "extract-audio" | "audio-separation" | "video-trim" | "audio-trim" | "video-frame-capture" | "director-stage";
+  readonly tool: "layers" | "crop" | "smart-edit" | "outpaint" | "cutout" | "inpainting-remove" | "image-hd" | "view-control" | "lighting" | "layer-decompose" | "panorama" | "product-replacement" | "multi-size" | "dynamic-poster" | "ecommerce-main" | "image-presets" | "grid-split" | "composition" | "annotation" | "video-edit" | "video-extend" | "video-partial-reshoot" | "video-upscale" | "video-frame-interpolation" | "video-depth-capture" | "video-subtitle-erasure" | "video-matting" | "video-crop" | "video-translation" | "video-mask-composite" | "extract-audio" | "audio-separation" | "video-trim" | "audio-trim" | "video-frame-capture" | "director-stage";
   readonly sources: ReadonlyArray<AssetRef>;
   readonly sourceItems: ReadonlyArray<string>;
   readonly parameters: Readonly<Record<string, string | boolean | number>>;
@@ -2743,7 +2743,7 @@ export interface ReferenceAddCommandOperation {
 
 export interface ReferenceBase extends ProjectEntity {
   readonly targetSpecId: string;
-  readonly role: "reference" | "first_frame" | "last_frame" | "continuation";
+  readonly role: "reference" | "first_frame" | "last_frame" | "continuation" | "control";
   readonly order: number;
   readonly active: boolean;
 }
@@ -2788,7 +2788,7 @@ export interface ReferenceWrite extends Contract {
 
 export interface ResolvedReference extends Contract {
   readonly referenceId: string;
-  readonly role: "reference" | "first_frame" | "last_frame" | "continuation";
+  readonly role: "reference" | "first_frame" | "last_frame" | "continuation" | "control";
   readonly asset: AssetRef;
   readonly metadata: MediaMetadata;
   readonly sourceVersion: ObjectVersion | null;
@@ -3232,7 +3232,7 @@ export interface VideoOutput {
 
 export interface VideoParameters extends Contract {
   readonly generateAudio: boolean;
-  readonly videoMode: "first_frame" | "reference" | "continuation";
+  readonly videoMode: "first_frame" | "reference" | "continuation" | "control";
   readonly durationSeconds: number | null;
   readonly aspectRatio: string | null;
   readonly resolution: string;
@@ -3297,4 +3297,4 @@ export type RoleAction = "configure_generation" | "save_manual_text" | "upload_m
 
 export type ModelKind = "agent" | "image" | "video" | "audio" | "vision";
 
-export type VideoMode = "first_frame" | "reference" | "continuation";
+export type VideoMode = "first_frame" | "reference" | "continuation" | "control";
