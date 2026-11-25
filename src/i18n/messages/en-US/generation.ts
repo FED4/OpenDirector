@@ -1,5 +1,10 @@
 /** Composer, generation state, model choice and generation rules. */
 export const generation = {
+  "generation.text.operation": "Text operation",
+  "generation.text.regenerate": "Regenerate",
+  "generation.text.modify": "Modify current text",
+  "generation.text.replaces": "Replaces current text; previous versions remain in history.",
+
   "generation.duration.fractionalHint": "H3 accepts fractional seconds and aligns output frames upward to 17k+5 at 24 fps.",
   "generation.duration.aligned": "Output: {frames} frames · {seconds} s",
   "generation.bigmodel.watermarkWaiver":

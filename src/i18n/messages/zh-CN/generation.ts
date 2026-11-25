@@ -1,5 +1,10 @@
 /** Composer, generation state, model choice and generation rules. */
 export const generation = {
+  "generation.text.operation": "文本操作",
+  "generation.text.regenerate": "重新生成",
+  "generation.text.modify": "修改当前正文",
+  "generation.text.replaces": "结果替换当前正文；原文保留在版本历史中。",
+
   "generation.duration.fractionalHint": "H3 支持小数秒，输出帧数向上对齐至 17k+5，帧率为 24 fps。",
   "generation.duration.aligned": "实际输出：{frames} 帧 · {seconds} 秒",
   "generation.bigmodel.watermarkWaiver":

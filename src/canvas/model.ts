@@ -193,6 +193,7 @@ export interface ExternalData {
 }
 
 export interface AgentNodeSettings {
+  operation?: "regenerate" | "modify";
   modelConfigId?: string;
   thinking: "auto" | "low" | "medium" | "high";
   maxTokens: number;

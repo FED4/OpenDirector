@@ -706,6 +706,7 @@ export function parseNodeData(
       ...(agent.modelConfigId
         ? { modelConfigId: agent.modelConfigId as string }
         : {}),
+      ...(agent.operation === "modify" ? {operation: "modify" as const} : {}),
       thinking: agent.thinking as "auto" | "low" | "medium" | "high",
       maxTokens: Number(agent.maxTokens),
     };
@@ -993,6 +994,7 @@ export function sameNodeData(a: CanvasNodeData, b: CanvasNodeData): boolean {
         b.agentSettings,
         (a, b) =>
           a.modelConfigId === b.modelConfigId &&
+          (a.operation ?? "regenerate") === (b.operation ?? "regenerate") &&
           a.thinking === b.thinking &&
           a.maxTokens === b.maxTokens,
       ) &&

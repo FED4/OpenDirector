@@ -123,6 +123,12 @@ export function TextNodeComposer({
       </div>
       <div className="cw-composer-footer">
         <div className="cw-composer-options">
+          <select aria-label={t("generation.text.operation")} value={settings.operation ?? "regenerate"}
+            disabled={running} onChange={event => update({operation: event.target.value as "modify" | "regenerate"})}>
+            <option value="regenerate">{t("generation.text.regenerate")}</option>
+            <option value="modify" disabled={!node.data.text}>{t("generation.text.modify")}</option>
+          </select>
+          <span>{t("generation.text.replaces")}</span>
           <div className="cw-model-select">
             <select
               aria-label={t("generation.model.agent")}

@@ -4,7 +4,7 @@ Mutations work on a private draft. The repository validates and publishes the
 entire transaction once, including versions, receipt and outbox event.
 """
 import asyncio
-from uuid import UUID, uuid4
+from uuid import UUID, uuid4, uuid5
 
 from pydantic import JsonValue
 from pydantic_core import to_jsonable_python
@@ -176,7 +176,15 @@ def current_generation_inputs(snapshot, spec, rules, visible=None):
     ``visible`` remains a projection hint for callers; hiding a display object
     does not deactivate references, remove prompt parts, or change adoption.
     """
-    return spec, resolved_inputs(snapshot, spec.id, rules)
+    references = resolved_inputs(snapshot, spec.id, rules)
+    if spec.kind == 'text' and spec.parameters.operation == 'modify':
+        source = spec.parameters.sourceAsset
+        asset = next((asset for asset in snapshot.assets if asset.id == source.assetId), None)
+        if asset is None or asset_ref(asset) != source:
+            raise ContractError('reference_invalid', 'The modify source is unavailable or has changed.', spec.id)
+        references = (*references, ResolvedReference(referenceId=uuid5(spec.id, 'modify-source'),
+            role='reference', asset=source, metadata=asset.metadata, name='Current text to modify'))
+    return spec, references
 
 
 def validate_frame_reference_limit(snapshot):

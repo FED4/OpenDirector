@@ -147,6 +147,7 @@ export function useWorkspaceGeneration(rt: WorkspaceRuntime) {
                     ? {
                         agentSettings: {
                           modelConfigId: request.config.id,
+                          operation: node.data.agentSettings?.operation,
                           thinking: request.thinking ?? "auto",
                           maxTokens: request.maxTokens ?? 8192,
                         },

@@ -953,6 +953,12 @@ export class CreationProjection {
           ...common,
           kind: "text",
           parameters: {
+            operation: node.data.agentSettings?.operation ?? "regenerate",
+            sourceAsset: node.data.agentSettings?.operation === "modify"
+              ? (() => {
+                  const asset = this.client.snapshot.assets.find(asset => asset.id === node.data.backendAssetId);
+                  return asset ? assetReference(asset) : null;
+                })() : null,
             thinking: node.data.agentSettings?.thinking ?? "auto",
             maxTokens:
               node.data.agentSettings?.maxTokens ??

@@ -1329,6 +1329,8 @@ export interface TextLayerContentInput extends LayerContentBaseInput {
 }
 
 export interface TextParametersInput extends ContractInput {
+  readonly operation?: "regenerate" | "modify";
+  readonly sourceAsset?: AssetRefInput | null;
   readonly thinking?: "auto" | "low" | "medium" | "high";
   readonly maxTokens?: number;
 }
@@ -2975,6 +2977,8 @@ export interface TextLayerContent extends LayerContentBase {
 }
 
 export interface TextParameters extends Contract {
+  readonly operation?: "regenerate" | "modify";
+  readonly sourceAsset?: AssetRef | null;
   readonly thinking: "auto" | "low" | "medium" | "high";
   readonly maxTokens: number;
 }

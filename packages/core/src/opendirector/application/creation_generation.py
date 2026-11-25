@@ -14,7 +14,7 @@ from uuid import uuid4, uuid5
 from filelock import FileLock, Timeout
 
 from opendirector.application.creation_assets import CreationAssets
-from opendirector.application.creation_canvas import CreationCanvas, asset_ref, current_generation_inputs, visible_item_ids
+from opendirector.application.creation_canvas import CreationCanvas, asset_ref, current_asset, current_generation_inputs, visible_item_ids
 from opendirector.application.voice_library import VoiceLibrary
 from opendirector.application.model_availability import ModelAvailability, generation_request
 from opendirector.application.generation_runtime import GenerationRuntime, _self_hosted_video
@@ -138,6 +138,12 @@ class CreationGeneration(GenerationRuntime):
                             content.append(rendered)
                             if kling_content is not None:
                                 kling_content.append({**rendered, 'referenceId': str(ref.referenceId), 'subjectRole': ref.subjectRole})
+        if spec.kind == 'text' and spec.parameters.operation == 'modify':
+            source_id = str(spec.parameters.sourceAsset.assetId)
+            content = [dict(type='text', text='Modify the following current document according to the instruction. Preserve unrelated content. Return the complete revised document.'),
+                dict(type='reference', assetId=source_id, name='Current text to modify'),
+                dict(type='text', text='Modification instruction: ' + spec.prompt),
+                *(part for part in (content or []) if part.get('assetId') != source_id)]
         adapter_content = {} if model.protocol != 'kling_video' else dict(klingPromptContent=kling_content,
             klingReferences=[dict(assetId=str(r.asset.assetId), role=r.role, referenceId=str(r.referenceId), subjectRole=r.subjectRole)
                              for r in job.inputSnapshot.references if r.transmission != 'context_only'])
@@ -361,6 +367,12 @@ class CreationGeneration(GenerationRuntime):
                 if previous is None or previous.inputSnapshot.spec.id != command.payload.specId:
                     raise ContractError('invalid_input', '新尝试必须关联同一生成配置的原任务。', command.payload.previousJobId)
             origin = command.payload.originItemId
+            requested = next(s for s in before.generationSpecs if s.id == command.payload.specId)
+            if requested.kind == 'text' and requested.parameters.operation == 'modify':
+                owner = next((item for item in before.canvasItems if item.id == origin), None)
+                current = current_asset(before, owner) if owner is not None else None
+                if current is None or asset_ref(current) != requested.parameters.sourceAsset:
+                    raise ContractError('revision_conflict', 'Reread the current text before modifying it.', origin)
             material = None
             if origin:
                 item = CreationCanvas._editable(data, origin)

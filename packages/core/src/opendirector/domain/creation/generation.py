@@ -23,6 +23,17 @@ from .models import ImageQuality, ModelConfigPublic, ModelSnapshot, VideoMode
 
 
 class TextParameters(Contract):
+    operation: Literal['regenerate', 'modify'] = Field(default='regenerate', exclude_if=lambda v: v == 'regenerate', description='Regenerate from prompt or modify the explicitly pinned current text.')
+    sourceAsset: AssetRef | None = Field(default=None, exclude_if=lambda v: v is None, description='Immutable current text required for modify; preserved in execution evidence.')
+
+    @model_validator(mode='after')
+    def edit_source(self):
+        if self.operation == 'modify' and (self.sourceAsset is None or self.sourceAsset.kind != 'text'):
+            raise ValueError('Modify requires a pinned text sourceAsset')
+        if self.operation == 'regenerate' and self.sourceAsset is not None:
+            raise ValueError('Regenerate must not include an implicit edit source')
+        return self
+
     thinking: Literal['auto', 'low', 'medium', 'high'] = Field(default='auto', description='Requested reasoning effort.')
     maxTokens: Annotated[int, Field(strict=True, ge=1, le=TEXT_MAX_TOKENS)] = Field(default=TEXT_DEFAULT_MAX_TOKENS, description='Maximum generated text tokens.')
 
