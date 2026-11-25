@@ -215,3 +215,5 @@ AI 助手可通过共用编辑命令修改同一份已保存时间线。交接�
 应用提供 `window.opendirector`：`await opendirector.ready` 返回上次保存的交互状态；`await opendirector.request({action: "submit", payload: {...}})` 请求保存 JSON 对象，`action: "compose"` 请求添加到对话草稿。两种操作都需要在宿主界面中确认；现有草稿会保留，不会自动发送。首版仅接受这两种动作，页面不能指定其他目标节点、采用素材或启动生成。数据上限为 64 KiB，锁定节点不接受动作。状态通过 `canvas.configureText` 保存，遵守现有版本检查、锁定、撤销和持久化规则。
 
 Agent 可以将文本生成配置的 `parameters.outputFormat` 设为 `html`，并通过同一个 `canvas.configureText` 命令配置文本节点的 `textFormat`。使用前通过 CLI 帮助读取当前契约。HTML 源码保存为文本资产，不作为可执行的 HTML 资产响应直接开放。
+
+对话中要求可点击选择、表单或交互图表时，助手的能力说明优先建议交互式 HTML；明确要求静态 Markdown 时遵循用户选择。CLI 支持 `canvas text create --format html` 和 `canvas text update --format html`，更新时省略该选项会保留原格式。续接已有原生会话时也会提供这份能力说明。
