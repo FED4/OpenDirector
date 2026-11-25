@@ -53,6 +53,8 @@ When work exposes a consequential risk or a recurring problem, add a lesson or u
 - **Save-observation follow-up:** [Issue #300](https://github.com/ThinkFlowLab/OpenDirector/issues/300) reproduced a stale saved label satisfying a browser wait before the edited text binding was committed. `asset.writeText` had succeeded, but the `creation.batch` containing `canvas.materialize` was still in flight; its later applied receipt installed the binding and the content was `AB`. Wait for the specific persisted binding, settings or position before asserting a save, retain the content check, and bound and release test gates even on failure. A visible saved label alone does not identify which edit was acknowledged.
 - **Assistant completion follow-up:** [PR #465's browser run](https://github.com/ThinkFlowLab/OpenDirector/actions/runs/45526547494/job/138913562926) read a saved reply while the Agent still held its write lease. The assistant panel test must wait for both the reply's final status and removal of the active turn ID. Delaying lease release reproduced the failure on the upstream baseline.
 
+- **Shared model catalog follow-up:** [Nightly run 45309310680](https://github.com/ThinkFlowLab/OpenDirector/actions/runs/45309310680/job/138160760923) reached the empty-video-selector test after an earlier script saved a video model. A new page still reads the shared server's catalog. For a UI test of an empty category, scope that catalog response to the test page and verify the flow with a model already present on the shared server.
+
 ## Browser clock pauses must precede short-lived observations
 
 - **Trigger:** Freezing browser time to inspect a short-lived response in both languages.
