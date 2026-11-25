@@ -125,6 +125,7 @@ export type WorkspaceState = {
   arrivingNodes: ReadonlySet<string>;
   assistantOpen: boolean;
   assistantSelectionRequest: number;
+  htmlDraft: { id: string; text: string } | null;
   presentationFocus: number;
   zoom: number;
 };
@@ -194,6 +195,7 @@ const workspaceKeys = [
   "arrivingNodes",
   "assistantOpen",
   "assistantSelectionRequest",
+  "htmlDraft",
   "presentationFocus",
   "zoom",
 ] as const satisfies readonly (keyof WorkspaceState)[];
@@ -254,6 +256,7 @@ export function createWorkspaceState(): WorkspaceState {
     arrivingNodes: new Set(),
     assistantOpen: false,
     assistantSelectionRequest: 0,
+    htmlDraft: null,
     presentationFocus: 0,
     zoom: 1,
   };

@@ -167,6 +167,8 @@ class CreationGeneration(GenerationRuntime):
             return kling_parameters(config, intent, any(records[key]['kind'] == 'image' for key in node['referenceIds']))
         if spec.kind == 'text':
             params.update(thinking=intent['thinking'], max_tokens=intent['maxTokens'])
+            if intent.get('outputFormat') == 'html':
+                params['output_format'] = 'html'
         if spec.kind == 'image':
             from opendirector.domain.image_output import resolve_image_output
             params['size'] = resolve_image_output(config, input_rules(config), intent)

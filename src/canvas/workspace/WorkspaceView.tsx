@@ -2422,6 +2422,8 @@ export function WorkspaceView({ rt }: { rt: WorkspaceRuntime }) {
           open={assistantOpen}
           layout={assistantLayout}
           selectionRequest={assistantSelectionRequest}
+          htmlDraft={rt.htmlDraft}
+          onHtmlDraftConsumed={(id) => rt.setHtmlDraft((draft) => draft?.id === id ? null : draft)}
           onClose={() => {
             setAssistantOpen(false);
             requestAnimationFrame(() =>
@@ -2480,7 +2482,10 @@ export function WorkspaceView({ rt }: { rt: WorkspaceRuntime }) {
           onClose={() => {
             void persist(historyRef.current.present);
             setTextWindowId(null);
-            if (!lockedIds.has(textWindowNode.id)) setTextEditingId(textWindowNode.id);
+            if (textWindowNode.data.textFormat === "html") {
+              setTextEditingId(null);
+              root.current?.focus({ preventScroll: true });
+            } else if (!lockedIds.has(textWindowNode.id)) setTextEditingId(textWindowNode.id);
             else root.current?.focus({ preventScroll: true });
           }}
           onBeginEdit={begin}

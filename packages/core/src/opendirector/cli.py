@@ -550,21 +550,22 @@ def write_markdown(client, text, operation, *, previous=None, versions=()):
     return {"assetId": asset["id"], **{key: asset[key] for key in ("kind", "fingerprint", "revision")}}
 
 
-@text_app.command("create", help="Create an editable text node from a Markdown file or stdin.",
+@text_app.command("create", help="Create a Markdown or interactive HTML text node. Use --format html for clickable interfaces.",
     epilog="Example: opendirector --project PROJECT_UUID canvas text create --file notes.md --x 20 --y 40 --width 480 --height 320")
 def text_create(ctx: typer.Context, file: MarkdownFile,
                 x: Annotated[float, typer.Option(help="Canvas X coordinate, independent of viewport zoom.")],
                 y: Annotated[float, typer.Option(help="Canvas Y coordinate, independent of viewport zoom.")],
                 width: TextWidth = 352, height: TextHeight = 198,
                 title: Annotated[str | None, typer.Option(help="Optional text node title.")] = None,
-                item_id: Annotated[UUID | None, typer.Option(help="Optional stable canvas item UUID.")] = None):
+                item_id: Annotated[UUID | None, typer.Option(help="Optional stable canvas item UUID.")] = None,
+                format: Annotated[Literal["markdown", "html"], typer.Option("--format", help="Rendering format; html enables interactive controls.")] = "markdown"):
     from opendirector.domain.creation.canvas import TextCanvasItem
     client = ctx.obj
     client.command = ctx.command_path
     operation = client.operation_id or uuid4()
     item = TextCanvasItem.model_validate(dict(id=str(item_id or uuid5(operation, "text-item")),
         projectId=client.project, kind="text", title=title or "", position=dict(x=x, y=y),
-        width=width, height=height, binding=dict(role="empty"))).model_dump(mode="json")
+        width=width, height=height, textFormat=format, binding=dict(role="empty"))).model_dump(mode="json")
     asset = write_markdown(client, markdown_file(file), operation)
     item["binding"] = dict(role="material", objectRef=asset)
     emit(client.execute("canvas.show", {"item": item}, identity=operation))
@@ -582,13 +583,14 @@ def text_show(ctx: typer.Context, id: Annotated[UUID, typer.Option(help="Text ca
         text = text_content(client, asset["assetId"])
     emit(dict(status="ok", itemId=item["id"], revision=item["revision"],
         expectedVersion=f"canvas_item:{item['id']}:{item['revision']}",
-        width=item["width"], height=item["height"], coordinateSpace="canvas", text=text))
+        width=item["width"], height=item["height"], coordinateSpace="canvas", textFormat=item.get("textFormat", "markdown"), htmlState=item.get("htmlState", {}), text=text))
 
 
 @text_app.command("update", help="Replace Markdown source via asset.writeText and canvas.materialize, preserving dimensions.",
     epilog="Example: opendirector --project PROJECT_UUID canvas text update --id ITEM_UUID --file - --expected-version canvas_item:ITEM_UUID:1")
 def text_update(ctx: typer.Context, id: Annotated[UUID, typer.Option(help="Text canvas item ID.")],
-                file: MarkdownFile, expected_version: TextVersion):
+                file: MarkdownFile, expected_version: TextVersion,
+                format: Annotated[Literal["markdown", "html"] | None, typer.Option("--format", help="Rendering format; omitted preserves the current format.")] = None):
     client = ctx.obj
     client.command = ctx.command_path
     version = text_version(id, expected_version)
@@ -597,8 +599,14 @@ def text_update(ctx: typer.Context, id: Annotated[UUID, typer.Option(help="Text 
     previous = text_asset(client, item)
     # shortcut: asset registration is a separate commit, use a shared atomic command if rollback across publication becomes required.
     asset = write_markdown(client, markdown_file(file), operation, previous=previous, versions=[version])
-    emit(client.execute("canvas.materialize", dict(itemId=str(id), asset=asset,
-        discardGenerationDraft=True), [version], identity=operation))
+    materialize = dict(itemId=str(id), asset=asset, discardGenerationDraft=True)
+    if format is not None:
+        emit(client.execute("creation.batch", {"operations": [
+            {"type": "canvas.materialize", "payload": materialize},
+            {"type": "canvas.configureText", "payload": dict(itemId=str(id), textFormat=format,
+                htmlState=item.get("htmlState", {}))}]}, [version], identity=operation))
+    else:
+        emit(client.execute("canvas.materialize", materialize, [version], identity=operation))
 
 
 @text_app.command("resize", help="Resize a text node through canvas.update without changing Markdown.",

@@ -68,6 +68,8 @@ export function AssistantPanel({
   onModelSelections,
   onOpenSettings,
   onPrepareReferences,
+  htmlDraft,
+  onHtmlDraftConsumed,
 }: {
   documentId: string;
   documentTitle: string;
@@ -84,10 +86,24 @@ export function AssistantPanel({
   onModelSelections?: (selections: ModelSelections) => void;
   onOpenSettings: () => void;
   onPrepareReferences: () => Promise<boolean>;
+  htmlDraft?: { id: string; text: string } | null;
+  onHtmlDraftConsumed?: (id: string) => void;
 }) {
   const t = useT();
   const chat = useAssistantChat(documentId, catalog, onTurnEnd, t, open);
   const { value, setValue } = chat;
+  const consumedHtmlDraft = useRef<string | null>(null);
+  useEffect(() => {
+    if (!chat.loaded || !htmlDraft || consumedHtmlDraft.current === htmlDraft.id) return;
+    consumedHtmlDraft.current = htmlDraft.id;
+    const text = htmlDraft.text;
+    setValue((previous) => ({ ...previous,
+      draft: previous.draft + (previous.draft ? "\n\n" : "") + text,
+      draftContent: [...(previous.draftContent ?? (previous.draft ? [{ type: "text" as const, text: previous.draft }] : [])),
+        { type: "text" as const, text: (previous.draft ? "\n\n" : "") + text }],
+    }));
+    onHtmlDraftConsumed?.(htmlDraft.id);
+  }, [chat.loaded, htmlDraft, setValue, onHtmlDraftConsumed]);
   const [deepseekLabels, setDeepseekLabels] = useState<Record<string, string>>({});
   const hasDeepseekMessages = value.messages.some((message) => message.runtime === "deepseek");
   useEffect(() => {

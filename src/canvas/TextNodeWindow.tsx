@@ -10,6 +10,7 @@ import type { CanvasNode } from "./model";
 import { CanvasIcon } from "./CanvasIcon";
 import { TooltipButton } from "./TooltipButton";
 import { TextNodeEditor, type TextSelections } from "./TextNodeEditor";
+import { HtmlNodeView } from "./HtmlNodeView";
 import { TextMarkdown } from "./TextMarkdown";
 import "./text-node-window.css";
 
@@ -134,7 +135,9 @@ export function TextNodeWindow({
             className="cw-text-window-input cw-text-window-preview nodrag nopan nowheel"
             tabIndex={0}
           >
-            <TextMarkdown text={text} />
+            {node.data.textFormat === "html"
+              ? <HtmlNodeView html={text} state={node.data.htmlState ?? {}} locked />
+              : <TextMarkdown text={text} />}
           </div>
         ) : (
           <TextNodeEditor

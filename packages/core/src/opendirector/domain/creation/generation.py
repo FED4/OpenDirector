@@ -23,6 +23,7 @@ from .models import ImageQuality, ModelConfigPublic, ModelSnapshot, VideoMode
 
 
 class TextParameters(Contract):
+    outputFormat: Literal['markdown', 'html'] = Field(default='markdown', exclude_if=lambda v: v == 'markdown', description='Generated text format. HTML uses the controlled interaction bridge.')
     thinking: Literal['auto', 'low', 'medium', 'high'] = Field(default='auto', description='Requested reasoning effort.')
     maxTokens: Annotated[int, Field(strict=True, ge=1, le=TEXT_MAX_TOKENS)] = Field(default=TEXT_DEFAULT_MAX_TOKENS, description='Maximum generated text tokens.')
 

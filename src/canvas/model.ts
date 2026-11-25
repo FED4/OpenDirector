@@ -193,6 +193,7 @@ export interface ExternalData {
 }
 
 export interface AgentNodeSettings {
+  outputFormat?: "markdown" | "html";
   modelConfigId?: string;
   thinking: "auto" | "low" | "medium" | "high";
   maxTokens: number;
@@ -211,6 +212,8 @@ export interface CanvasNodeData extends Record<string, unknown> {
   src?: string;
   mimeType?: string;
   text?: string;
+  textFormat?: "markdown" | "html";
+  htmlState?: Record<string, import("../contracts/generated.ts").JsonValue>;
   assetState?: "ready" | "missing";
   /** Imported/derived assets have editing controls, not an automatic generator.
    * Omitted in older documents; keep their existing generator behavior. */

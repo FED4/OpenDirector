@@ -1,0 +1,15 @@
+<!doctype html><html><head><style>
+      body{margin:0;padding:32px;background:#f3f6fc;color:#14233c;font:16px system-ui}
+      h1{font-size:26px} .options{display:flex;gap:12px} label{padding:18px;background:white;border-radius:12px;border:1px solid #dbe4f0}
+      button{margin:24px 8px 0 0;padding:12px 18px;background:#345cf0;color:white;border:0;border-radius:8px;cursor:pointer}
+      input[type=range]{width:90%} p{color:#52657c}
+    </style></head><body><h1>Design your next scene</h1><p>Choose a direction and adjust the pacing.</p>
+    <div class=options><label><input type=radio name=choice value=a>Quiet morning</label><label><input type=radio name=choice value=b checked>City in motion</label><label><input type=radio name=choice value=c>After sunset</label></div>
+    <h3>Duration <output id=duration>15</output>s</h3><input id=seconds type=range min=5 max=30 value=15 oninput="duration.value=this.value">
+    <div><button id=save>Save preferences</button><button id=compose>Add to chat</button></div><p id=status>Changes stay local until you submit.</p>
+    <script>
+    function payload(){return {choice:document.querySelector('input:checked').value,seconds:Number(seconds.value)}}
+    opendirector.ready.then(state=>{if(state.choice)document.querySelector('input[value="'+state.choice+'"]').checked=true;if(state.seconds)duration.value=seconds.value=state.seconds;});
+    save.onclick=async()=>{try{await opendirector.request({action:'submit',payload:payload()});status.textContent='Saved'}catch(error){status.textContent=error.message}};
+    compose.onclick=async()=>{try{await opendirector.request({action:'compose',payload:payload()});}catch(error){status.textContent=error.message}};
+    </script></body></html>

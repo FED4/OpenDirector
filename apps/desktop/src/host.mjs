@@ -96,8 +96,10 @@ export class Host {
 }
 
 export function ownedURL(value) {
-  const url = new URL(value);
-  return url.protocol === 'opendirector:' && url.hostname === 'app' && !url.port && !url.username && !url.password;
+  try {
+    const url = new URL(value);
+    return url.protocol === 'opendirector:' && url.hostname === 'app' && !url.port && !url.username && !url.password;
+  } catch { return false; }
 }
 
 export async function proxyRequest(request, host, fetcher) {
@@ -125,6 +127,7 @@ export async function proxyRequest(request, host, fetcher) {
   const outgoing = new Headers(response.headers);
   for (const name of ['connection', 'transfer-encoding', 'keep-alive', 'set-cookie', 'content-encoding', 'content-length']) outgoing.delete(name);
   outgoing.set('Cache-Control', 'no-store');
-  outgoing.set('Content-Security-Policy', "default-src 'self'; script-src 'self' 'wasm-unsafe-eval'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:; media-src 'self' blob: data:; font-src 'self' data:; connect-src 'self'; worker-src 'self' blob:; object-src 'none'; base-uri 'none'; frame-src 'none'");
+  outgoing.set('Content-Security-Policy', "default-src 'self'; script-src 'self' 'wasm-unsafe-eval'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:; media-src 'self' blob: data:; font-src 'self' data:; connect-src 'self'; worker-src 'self' blob:; object-src 'none'; base-uri 'none'; frame-src opendirector://app/html-runtime.html");
+  if (incoming.pathname === '/html-runtime.html') outgoing.set('Content-Security-Policy', "default-src 'none'; script-src 'unsafe-inline'; style-src 'unsafe-inline'; img-src data: blob:; font-src data:; connect-src 'none'; frame-src 'none'; worker-src 'none'; object-src 'none'; base-uri 'none'; form-action 'none'");
   return new Response(response.body, { status: response.status, statusText: response.statusText, headers: outgoing });
 }

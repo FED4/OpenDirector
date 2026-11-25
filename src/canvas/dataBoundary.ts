@@ -1,3 +1,4 @@
+import { parseHtmlAction } from "./htmlActions.ts";
 import { validTimelineText } from "./timelineText.ts";
 
 import { RULE_FACTS } from "../contracts/ruleFacts.generated.ts";
@@ -680,6 +681,17 @@ export function parseNodeData(
   }
   for (const key of ["src", "mimeType", "text"] as const)
     if (typeof value[key] === "string") result[key] = value[key];
+  if (value.textFormat !== undefined) {
+    if (kind !== "text" || !["markdown", "html"].includes(String(value.textFormat)))
+      return { ok: false, error: tNow("html.invalid") };
+    result.textFormat = value.textFormat as "markdown" | "html";
+  }
+  if (value.htmlState !== undefined) {
+    const action = parseHtmlAction({type: "opendirector.action", version: 1,
+      requestId: "state", action: "submit", payload: value.htmlState});
+    if (kind !== "text" || !action) return { ok: false, error: tNow("html.limit") };
+    result.htmlState = structuredClone(action.payload);
+  }
   if (value.assetState) result.assetState = value.assetState;
   if (value.mediaRole) result.mediaRole = value.mediaRole;
   // Dropping this would lose the only evidence that an imported generation
@@ -706,6 +718,7 @@ export function parseNodeData(
       ...(agent.modelConfigId
         ? { modelConfigId: agent.modelConfigId as string }
         : {}),
+      ...(agent.outputFormat === "html" ? {outputFormat: "html" as const} : {}),
       thinking: agent.thinking as "auto" | "low" | "medium" | "high",
       maxTokens: Number(agent.maxTokens),
     };
@@ -986,6 +999,8 @@ export function sameNodeData(a: CanvasNodeData, b: CanvasNodeData): boolean {
       a.src === b.src &&
       a.mimeType === b.mimeType &&
       a.text === b.text &&
+      (a.textFormat ?? "markdown") === (b.textFormat ?? "markdown") &&
+      (a.htmlState === b.htmlState || JSON.stringify(a.htmlState ?? {}) === JSON.stringify(b.htmlState ?? {})) &&
       a.assetState === b.assetState &&
       a.mediaRole === b.mediaRole &&
       sameOptional(
@@ -993,6 +1008,7 @@ export function sameNodeData(a: CanvasNodeData, b: CanvasNodeData): boolean {
         b.agentSettings,
         (a, b) =>
           a.modelConfigId === b.modelConfigId &&
+          (a.outputFormat ?? "markdown") === (b.outputFormat ?? "markdown") &&
           a.thinking === b.thinking &&
           a.maxTokens === b.maxTokens,
       ) &&

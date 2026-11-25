@@ -1,0 +1,11 @@
+.cw-html-node { position: relative; width: 100%; height: 100%; min-height: 120px; overflow: hidden; border-radius: inherit; background: #fff; color: #16181c; }
+.cw-html-node iframe { display: block; border: 0; width: 100%; height: 100%; min-height: 120px; }
+.cw-html-review { position: absolute; inset: 8px; z-index: 2; display: flex; flex-direction: column; gap: 8px; padding: 12px; border: 1px solid #777; border-radius: 10px; color: var(--cw-text, #eee); background: var(--cw-panel, #202126); box-shadow: 0 4px 20px #0006; }
+.cw-html-review pre { flex: 1; overflow: auto; white-space: pre-wrap; overflow-wrap: anywhere; font-size: 12px; }
+.cw-html-review button { padding: 6px 10px; margin-right: 8px; cursor: pointer; }
+.cw-html-status { position: absolute; bottom: 6px; left: 8px; right: 8px; padding: 5px 8px; color: #fff; background: #222e; border-radius: 5px; font-size: 12px; pointer-events: none; }
+.cw-text-window-preview:has(.cw-html-node) { padding: 0; }
+
+.cw-html-source { position: absolute; top: 6px; right: 6px; border: 1px solid #9ca9ba; padding: 4px 8px; background: #fff; color: #293b55; border-radius: 5px; cursor: pointer; font-size: 11px; }
+
+.cw-html-loading { position: absolute; inset: 0; display: grid; place-items: center; color: #52657c; font-size: 13px; }

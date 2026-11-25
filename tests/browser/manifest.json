@@ -158,6 +158,11 @@
       "note": "Markdown blocks, native inline composition, fullscreen selection/scroll handoff and resize commits. Uses /src through Vite."
     },
     {
+      "file": "interactive_html.mjs",
+      "lanes": ["extended"],
+      "note": "Sandboxed model-authored HTML, confirmed state persistence, assistant drafts and blocked network/navigation. Uses /src through Vite."
+    },
+    {
       "file": "canvas_switch.mjs",
       "previewSafe": true,
       "lanes": [

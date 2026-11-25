@@ -88,6 +88,18 @@ class VolcengineGeneration:
         content = prepared['content']
         messages = [{"role": "system", "content": "你是 OpenDirector 创作助手。根据要求输出可直接保存的文本正文；不要声称调用了媒体工具。"},
                     {"role": "user", "content": content}]
+        if task['parameters'].get('output_format') == 'html':
+            messages[0]['content'] = (
+                'Generate one complete self-contained HTML document with inline CSS and JavaScript. '
+                'Return HTML only, without Markdown fences. No network, external scripts, frames, '
+                'navigation, filesystem or host API access is available. Build any interaction requested. '
+                'The host provides window.opendirector: await opendirector.ready resolves to the last '
+                'saved JSON object. await opendirector.request({action:"submit", payload:{...}}) saves '
+                'a JSON object (max 64 KiB); action:"compose" with a JSON object offers it to the user '
+                'to add to an assistant draft. Do not call actions on load or pretend to generate media. '
+                'Both actions require a user click and may fail; display returned errors. '
+                'Use saved state to restore form controls. No target node or arbitrary action is allowed.'
+            )
         payload = chat_payload(config, messages, task["parameters"]["thinking"])
         payload["max_tokens"] = task["parameters"]["max_tokens"]
         parts, size = [], 0

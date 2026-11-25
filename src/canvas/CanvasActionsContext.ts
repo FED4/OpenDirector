@@ -7,6 +7,8 @@ import type { SubjectMediaSlot } from "./subjectMedia.ts";
 export interface CanvasActions {
   select: (id: string, event: MouseEvent) => void;
   reopenComposer: (id: string, event: MouseEvent) => void;
+  editHtmlSource?: (id: string) => void;
+  htmlAction?: (id: string, action: "submit" | "compose", payload: Record<string, import("../contracts/generated.ts").JsonValue>) => Promise<void>;
   update: (id: string, data: Partial<CanvasNodeData>) => void;
   rename: (id: string) => void;
   nameEdit?: { id: string; value: string } | null;

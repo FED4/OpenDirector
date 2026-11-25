@@ -204,3 +204,14 @@ Saving projects locally does not imply offline inference. Generation prompts and
 ### Output a timeline from the canvas
 
 Select an unlocked timeline node and use **Output video** in its toolbar. **⌘Enter** on macOS or **Ctrl+Enter** on Windows/Linux performs the same action when focus is outside a text field or dialog. The saved timeline supplies the output size, frame rate, clips and audio. A pending video node appears below the timeline immediately, with rendering progress and a cancel control. Successful publication replaces that preview with the playable MP4 under the same node identity, connected to its timeline by an output-source line. Repeated output adds a version to that video node; use its version picker to preview or restore earlier outputs. The editable timeline remains available. Failed output can be retried from the pending node. Keep the page open while rendering. Cancel stops rendering; retrying a failed publication reuses the rendered video and operation identity.
+
+
+## Interactive HTML
+
+On a text node, choose **Interactive HTML** from **Output format** in the generation composer, then describe the interface you want and click Generate. The text model receives the HTML runtime contract and produces a self-contained HTML/CSS/JavaScript document. HTML uses the existing text asset, generation, source editing and history services; it is a rendering mode of a text node, not a separate asset kind.
+
+The sandbox permits local interactions such as forms, sliders, quizzes and charts. Network requests, external dependencies, host APIs and navigation outside the runtime are blocked. Use **Edit source** to inspect or change the document; the expanded editor supports an isolated preview.
+
+The host supplies `window.opendirector`. `await opendirector.ready` returns the last saved interaction state. `await opendirector.request({action: "submit", payload: {...}})` offers a JSON object for saving; `action: "compose"` offers it for insertion into an assistant draft. Both require confirmation in host-owned UI. Existing draft text is preserved and nothing is sent automatically. Only these two actions are accepted; HTML cannot supply a target node, adopt assets or start generation. Payloads are limited to 64 KiB, and locked nodes reject actions. Submitted state is saved through `canvas.configureText`, with the normal object-version, lock, undo and persistence rules.
+
+Agents can set `TextGenerationSpec.parameters.outputFormat` to `html` and configure `TextCanvasItem.textFormat` using the same `canvas.configureText` command. Discover its current schema through CLI help before use. HTML source is stored as a text asset, not served as an executable HTML asset response.

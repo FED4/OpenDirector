@@ -202,7 +202,13 @@ def create_app(store: LocalProjects | None = None, chat_provider=None, generatio
                     },
                     status_code=403,
                 )
-        return await call_next(request)
+        response = await call_next(request)
+        if 'text/html' in response.headers.get('content-type', ''):
+            if request.url.path == '/html-runtime.html':
+                response.headers['Content-Security-Policy'] = "default-src 'none'; script-src 'unsafe-inline'; style-src 'unsafe-inline'; img-src data: blob:; font-src data:; connect-src 'none'; frame-src 'none'; worker-src 'none'; object-src 'none'; base-uri 'none'; form-action 'none'"
+            else:
+                response.headers['Content-Security-Policy'] = f"frame-src {str(request.base_url).rstrip('/')}/html-runtime.html; object-src 'none'"
+        return response
 
     @app.get("/api/health")
     def health():
@@ -352,6 +358,10 @@ def create_app(store: LocalProjects | None = None, chat_provider=None, generatio
         font_root = dist / "fonts"
         if font_root.is_dir() and not font_root.is_symlink() and font_root.resolve().is_relative_to(dist.resolve()):
             app.mount("/fonts", StaticFiles(directory=font_root), name="fonts")
+
+        @app.get("/html-runtime.html")
+        def html_runtime():
+            return FileResponse(dist / "html-runtime.html")
 
         @app.get("/")
         def index():

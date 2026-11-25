@@ -606,6 +606,10 @@ export class CreationProjection {
           parentId: item.parentId ?? undefined,
         };
         node.data.title = item.title;
+        if (item.kind === "text") {
+          node.data.textFormat = item.textFormat ?? "markdown";
+          node.data.htmlState = { ...item.htmlState };
+        }
         // Audio cards are a fixed control strip; older square cards are
         // compacted on read instead of waiting for a playback event.
         if (node.type === "audio") node.height = AUDIO_CARD_SIZE.height;
@@ -953,6 +957,7 @@ export class CreationProjection {
           ...common,
           kind: "text",
           parameters: {
+            outputFormat: node.data.agentSettings?.outputFormat ?? node.data.textFormat ?? "markdown",
             thinking: node.data.agentSettings?.thinking ?? "auto",
             maxTokens:
               node.data.agentSettings?.maxTokens ??
@@ -1638,6 +1643,16 @@ export class CreationProjection {
           });
         if (!same(node.position, old?.position))
           moves.push({ itemId: node.id, position: node.position });
+      }
+    }
+    for (const node of writableNodes.filter((node) => node.type === "text")) {
+      const old = oldNodes.get(node.id);
+      if ((node.data.textFormat ?? "markdown") !== (old?.data.textFormat ?? "markdown") ||
+          !same(node.data.htmlState ?? {}, old?.data.htmlState ?? {})) {
+        operations.push({ type: "canvas.configureText", payload: {
+          itemId: node.id, textFormat: node.data.textFormat ?? "markdown",
+          htmlState: node.data.htmlState ?? {},
+        }});
       }
     }
     // Retained image editors and the published output share one commit.

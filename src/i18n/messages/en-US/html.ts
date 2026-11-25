@@ -1,0 +1,20 @@
+export const html = {
+  "html.loading": "Loading interactive content…",
+  "html.outputFormat": "Output format",
+  "html.interactive": "Interactive HTML",
+  "html.frame": "Interactive HTML content",
+  "html.source": "Edit source",
+  "html.review": "Review interaction result",
+  "html.save": "Save result",
+  "html.compose": "Add to assistant draft",
+  "html.dismiss": "Dismiss",
+  "html.saved": "Result saved",
+  "html.composed": "Added to assistant draft",
+  "html.saving": "Saving…",
+  "html.unavailable": "This HTML action is unavailable or the node is locked.",
+  "html.saveFailed": "Could not save the interaction result. Retry after checking the project.",
+  "html.invalid": "Unsupported HTML action or invalid payload.",
+  "html.busy": "Another interaction is waiting for review.",
+  "html.cancelled": "The interaction was dismissed.",
+  "html.limit": "Interaction data must be a JSON object of at most 64 KiB."
+} as const;

@@ -1,3 +1,4 @@
+import { html } from "./html.ts";
 import { availability } from "./availability.ts";
 import { voiceLibrary } from "./voiceLibrary.ts";
 import { trace } from "./trace.ts";
@@ -21,6 +22,7 @@ import { tools } from "./tools.ts";
 /** Canonical copy. Every other locale must provide the same keys. */
 export const zhCN = {
   ...common,
+  ...html,
   ...availability,
   ...voiceLibrary,
   ...settings,

@@ -57,6 +57,11 @@ COMMANDS = {name: model for name, model in COMMAND_MODELS.items()
             if name not in EXCLUDED}
 for command_name, command_model in COMMANDS.items():
     assert command_model.__doc__ and command_model.__doc__.strip(), f'Missing command metadata: {command_name}'
+INTERACTIVE_HTML_GUIDANCE = """Interactive canvas capabilities: when users ask for clickable choices, candidate selection, forms, sliders, quizzes or interactive charts, prefer a working HTML interface on the canvas. Static Markdown checkboxes are not interactive controls. Respect an explicit request for static Markdown.
+Write a self-contained HTML/CSS/JS file in the execution directory, then publish with canvas text create --format html (or canvas text update --format html for an existing text node). Read each command's --help. Preserve the existing content, stable choice IDs, labels and timing when converting nodes; inspect the current source first and use its current expected version. Do not invoke a paid generation job merely to publish HTML you have already authored.
+The host provides window.opendirector: await opendirector.ready returns the last saved JSON object; await opendirector.request({action:'submit',payload:{...}}) requests saving state on this node; action:'compose' offers JSON for insertion into the assistant draft. Both require host confirmation. Restore controls from saved state. No network, external dependencies, filesystem, CLI, target-node override or generate action is allowed inside HTML. Use real buttons and event handlers; handle rejected actions. After publication, verify that textFormat is html and the source contains the controls before reporting success.
+"""
+
 SYSTEM = '''You are OpenDirector, a video creation assistant.
 Respond directly when the user's request can be answered without project state or tool execution.
 When the task needs project capabilities, use the harness's native shell tool to discover and run the opendirector executable on PATH.
@@ -76,7 +81,7 @@ Plans and prompt requests do not authorize generation. Never resubmit an unknown
 Use stable operation IDs for write retries; report unsupported media editing/export capabilities honestly.
 Reply in the same language as the user's latest request. Keep project content, quoted text, model names,
 identifiers and code unchanged. If a tool error is shown in another language, explain it in the user's language.
-'''
+''' + '\n' + INTERACTIVE_HTML_GUIDANCE
 
 
 def tool_schema(name: str, description: str, parameters: dict) -> dict:

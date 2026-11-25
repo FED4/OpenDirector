@@ -1181,6 +1181,22 @@ export function useWorkspaceInteraction(rt: WorkspaceRuntime) {
         }).present,
       }));
     },
+    editHtmlSource: (id: string) => rt.setTextWindowId(id),
+    htmlAction: async (id: string, action: "submit" | "compose", payload: Record<string, import("../../contracts/generated.ts").JsonValue>) => {
+      const current = historyRef.current.present;
+      const node = current.nodes.find((item) => item.id === id);
+      if (!node || node.type !== "text" || node.data.textFormat !== "html" ||
+          lockedIds.has(id)) throw new Error(rt.t("html.unavailable"));
+      if (action === "compose") {
+        rt.setHtmlDraft({ id: crypto.randomUUID(), text: JSON.stringify(payload, null, 2) });
+        rt.setAssistantOpen(true);
+        return;
+      }
+      const next = { ...current, nodes: current.nodes.map((item) => item.id === id
+        ? { ...item, data: { ...item.data, htmlState: payload } } : item) };
+      change(() => next);
+      if (!await persist(next)) throw new Error(rt.t("html.saveFailed"));
+    },
     beginEdit: begin,
     endEdit: end,
     beginResize: () => {

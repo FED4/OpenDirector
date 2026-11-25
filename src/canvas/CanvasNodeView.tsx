@@ -2,6 +2,7 @@ import { memo, useContext, type MouseEvent } from "react";
 import { NodeResizeControl, type Node, type NodeProps } from "@xyflow/react";
 import { TEXT_NODE_MIN_SIZE } from "./model";
 import { TextNodeEditor } from "./TextNodeEditor";
+import { HtmlNodeView } from "./HtmlNodeView";
 import { TextMarkdown } from "./TextMarkdown";
 import { NodeFrame } from "./NodeFrame";
 import type { CanvasNodeData, CanvasNodeKind, CanvasResource } from "./model";
@@ -99,6 +100,13 @@ function CanvasNodeContents({ id, data, selected }: NodeProps<CanvasFlowNode>) {
                 event.stopPropagation();
             }}
           />
+        ) : data.textFormat === "html" ? (
+          <HtmlNodeView html={data.text ?? ""} state={data.htmlState ?? {}} locked={locked}
+            onEditSource={() => actions?.editHtmlSource?.(id)}
+            onAction={async (action, payload) => {
+              if (!actions?.htmlAction) throw new Error(t("html.unavailable"));
+              await actions.htmlAction(id, action, payload);
+            }} />
         ) : (
           <div
             className="cw-text-display nowheel"

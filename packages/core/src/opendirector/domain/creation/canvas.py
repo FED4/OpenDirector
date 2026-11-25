@@ -1,5 +1,7 @@
 """Shared node inheritance and the independent media-role axis."""
+import json
 from typing import Annotated, Literal
+from pydantic import JsonValue
 from uuid import UUID
 
 from pydantic import Field, model_validator
@@ -139,6 +141,14 @@ class MediaCanvasItem(CanvasItemBase):
 
 class TextCanvasItem(MediaCanvasItem):
     kind: Literal['text'] = Field(description='Business object or media type.')
+    textFormat: Literal['markdown', 'html'] = Field(default='markdown', exclude_if=lambda v: v == 'markdown', description='Text rendering format; HTML runs in an isolated iframe.')
+    htmlState: dict[str, JsonValue] = Field(default_factory=dict, exclude_if=lambda v: not v, description='Last explicitly submitted HTML interaction state.')
+
+    @model_validator(mode='after')
+    def bounded_html_state(self):
+        if len(json.dumps(self.htmlState, ensure_ascii=False).encode('utf-8')) > 65536:
+            raise ValueError('HTML interaction state must not exceed 64 KiB')
+        return self
 
 
 class ImageCanvasItem(MediaCanvasItem):

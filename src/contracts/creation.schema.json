@@ -1524,6 +1524,7 @@
                   "canvas.applyEdit": "#/$defs/CanvasApplyEditCommandOperation",
                   "canvas.attachEditor": "#/$defs/CanvasEditorAttachCommandOperation",
                   "canvas.configure": "#/$defs/CanvasConfigureCommandOperation",
+                  "canvas.configureText": "#/$defs/CanvasTextConfigureCommandOperation",
                   "canvas.detachEditor": "#/$defs/CanvasEditorDetachCommandOperation",
                   "canvas.hide": "#/$defs/CanvasHideCommandOperation",
                   "canvas.materialize": "#/$defs/CanvasMaterializeCommandOperation",
@@ -1552,6 +1553,9 @@
                 },
                 {
                   "$ref": "#/$defs/CanvasUpdateCommandOperation"
+                },
+                {
+                  "$ref": "#/$defs/CanvasTextConfigureCommandOperation"
                 },
                 {
                   "$ref": "#/$defs/CanvasHideCommandOperation"
@@ -3208,6 +3212,121 @@
         "title": "CanvasStatusQuery",
         "type": "object"
       },
+      "CanvasTextConfigure": {
+        "additionalProperties": false,
+        "properties": {
+          "itemId": {
+            "description": "Text canvas item ID; requires its current canvas_item version.",
+            "format": "uuid",
+            "title": "Itemid",
+            "type": "string"
+          },
+          "textFormat": {
+            "description": "Render Markdown or an isolated interactive HTML document.",
+            "enum": [
+              "markdown",
+              "html"
+            ],
+            "title": "Textformat",
+            "type": "string"
+          },
+          "htmlState": {
+            "additionalProperties": {
+              "$ref": "#/$defs/JsonValue"
+            },
+            "description": "Explicitly submitted interaction state; maximum 64 KiB.",
+            "title": "Htmlstate",
+            "type": "object"
+          }
+        },
+        "required": [
+          "itemId",
+          "textFormat"
+        ],
+        "title": "CanvasTextConfigure",
+        "type": "object"
+      },
+      "CanvasTextConfigureCommand": {
+        "additionalProperties": false,
+        "description": "Set text rendering format and submitted HTML interaction state.",
+        "properties": {
+          "commandId": {
+            "description": "Stable command ID for idempotent replay.",
+            "format": "uuid",
+            "title": "Commandid",
+            "type": "string"
+          },
+          "projectId": {
+            "description": "Owning project ID.",
+            "format": "uuid",
+            "title": "Projectid",
+            "type": "string"
+          },
+          "type": {
+            "const": "canvas.configureText",
+            "description": "Command discriminator.",
+            "title": "Type",
+            "type": "string"
+          },
+          "expectedVersions": {
+            "default": [],
+            "description": "Current versions of mutated existing objects; payload revision fields do not replace these.",
+            "items": {
+              "$ref": "#/$defs/ObjectVersion"
+            },
+            "title": "Expectedversions",
+            "type": "array"
+          },
+          "expectedPreview": {
+            "anyOf": [
+              {
+                "pattern": "^[0-9a-f]{64}$",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "description": "Fingerprint of the confirmed impact preview.",
+            "title": "Expectedpreview"
+          },
+          "payload": {
+            "$ref": "#/$defs/CanvasTextConfigure",
+            "description": "Set text rendering format and submitted HTML interaction state."
+          }
+        },
+        "required": [
+          "commandId",
+          "projectId",
+          "type",
+          "payload"
+        ],
+        "title": "CanvasTextConfigureCommand",
+        "type": "object"
+      },
+      "CanvasTextConfigureCommandOperation": {
+        "additionalProperties": false,
+        "description": "Set text rendering format and submitted HTML interaction state.",
+        "properties": {
+          "type": {
+            "const": "canvas.configureText",
+            "description": "Operation discriminator.",
+            "title": "Type",
+            "type": "string"
+          },
+          "payload": {
+            "$ref": "#/$defs/CanvasTextConfigure",
+            "description": "Set text rendering format and submitted HTML interaction state."
+          }
+        },
+        "required": [
+          "type",
+          "payload"
+        ],
+        "title": "CanvasTextConfigureCommandOperation",
+        "type": "object"
+      },
       "CanvasUpdateCommand": {
         "additionalProperties": false,
         "description": "Update canvas presentation, grouping or lock state.",
@@ -4020,6 +4139,7 @@
                 "canvas.applyVersion": "#/$defs/NodeVersionApplyCommand",
                 "canvas.attachEditor": "#/$defs/CanvasEditorAttachCommand",
                 "canvas.configure": "#/$defs/CanvasConfigureCommand",
+                "canvas.configureText": "#/$defs/CanvasTextConfigureCommand",
                 "canvas.createGeneration": "#/$defs/CanvasCreateGenerationCommand",
                 "canvas.detachEditor": "#/$defs/CanvasEditorDetachCommand",
                 "canvas.hide": "#/$defs/CanvasHideCommand",
@@ -4093,6 +4213,9 @@
               },
               {
                 "$ref": "#/$defs/CanvasUpdateCommand"
+              },
+              {
+                "$ref": "#/$defs/CanvasTextConfigureCommand"
               },
               {
                 "$ref": "#/$defs/CanvasHideCommand"
@@ -12545,6 +12668,24 @@
             },
             "title": "Editors",
             "type": "array"
+          },
+          "textFormat": {
+            "default": "markdown",
+            "description": "Text rendering format; HTML runs in an isolated iframe.",
+            "enum": [
+              "markdown",
+              "html"
+            ],
+            "title": "Textformat",
+            "type": "string"
+          },
+          "htmlState": {
+            "additionalProperties": {
+              "$ref": "#/$defs/JsonValue"
+            },
+            "description": "Last explicitly submitted HTML interaction state.",
+            "title": "Htmlstate",
+            "type": "object"
           }
         },
         "required": [
@@ -12559,6 +12700,16 @@
       "TextExecution": {
         "additionalProperties": false,
         "properties": {
+          "outputFormat": {
+            "default": "markdown",
+            "description": "Generated text format. HTML uses the controlled interaction bridge.",
+            "enum": [
+              "markdown",
+              "html"
+            ],
+            "title": "Outputformat",
+            "type": "string"
+          },
           "thinking": {
             "default": "auto",
             "description": "Requested reasoning effort.",
@@ -12765,6 +12916,16 @@
       "TextParameters": {
         "additionalProperties": false,
         "properties": {
+          "outputFormat": {
+            "default": "markdown",
+            "description": "Generated text format. HTML uses the controlled interaction bridge.",
+            "enum": [
+              "markdown",
+              "html"
+            ],
+            "title": "Outputformat",
+            "type": "string"
+          },
           "thinking": {
             "default": "auto",
             "description": "Requested reasoning effort.",
@@ -15440,6 +15601,7 @@
             "canvas.applyVersion": "#/$defs/NodeVersionApplyCommand",
             "canvas.attachEditor": "#/$defs/CanvasEditorAttachCommand",
             "canvas.configure": "#/$defs/CanvasConfigureCommand",
+            "canvas.configureText": "#/$defs/CanvasTextConfigureCommand",
             "canvas.createGeneration": "#/$defs/CanvasCreateGenerationCommand",
             "canvas.detachEditor": "#/$defs/CanvasEditorDetachCommand",
             "canvas.hide": "#/$defs/CanvasHideCommand",
@@ -15513,6 +15675,9 @@
           },
           {
             "$ref": "#/$defs/CanvasUpdateCommand"
+          },
+          {
+            "$ref": "#/$defs/CanvasTextConfigureCommand"
           },
           {
             "$ref": "#/$defs/CanvasHideCommand"
@@ -17348,6 +17513,7 @@
                   "canvas.applyEdit": "#/$defs/CanvasApplyEditCommandOperation",
                   "canvas.attachEditor": "#/$defs/CanvasEditorAttachCommandOperation",
                   "canvas.configure": "#/$defs/CanvasConfigureCommandOperation",
+                  "canvas.configureText": "#/$defs/CanvasTextConfigureCommandOperation",
                   "canvas.detachEditor": "#/$defs/CanvasEditorDetachCommandOperation",
                   "canvas.hide": "#/$defs/CanvasHideCommandOperation",
                   "canvas.materialize": "#/$defs/CanvasMaterializeCommandOperation",
@@ -17376,6 +17542,9 @@
                 },
                 {
                   "$ref": "#/$defs/CanvasUpdateCommandOperation"
+                },
+                {
+                  "$ref": "#/$defs/CanvasTextConfigureCommandOperation"
                 },
                 {
                   "$ref": "#/$defs/CanvasHideCommandOperation"
@@ -19075,6 +19244,124 @@
         "title": "CanvasStatusQuery",
         "type": "object"
       },
+      "CanvasTextConfigure": {
+        "additionalProperties": false,
+        "properties": {
+          "itemId": {
+            "description": "Text canvas item ID; requires its current canvas_item version.",
+            "format": "uuid",
+            "title": "Itemid",
+            "type": "string"
+          },
+          "textFormat": {
+            "description": "Render Markdown or an isolated interactive HTML document.",
+            "enum": [
+              "markdown",
+              "html"
+            ],
+            "title": "Textformat",
+            "type": "string"
+          },
+          "htmlState": {
+            "additionalProperties": {
+              "$ref": "#/$defs/JsonValue"
+            },
+            "description": "Explicitly submitted interaction state; maximum 64 KiB.",
+            "title": "Htmlstate",
+            "type": "object"
+          }
+        },
+        "required": [
+          "itemId",
+          "textFormat",
+          "htmlState"
+        ],
+        "title": "CanvasTextConfigure",
+        "type": "object"
+      },
+      "CanvasTextConfigureCommand": {
+        "additionalProperties": false,
+        "description": "Set text rendering format and submitted HTML interaction state.",
+        "properties": {
+          "commandId": {
+            "description": "Stable command ID for idempotent replay.",
+            "format": "uuid",
+            "title": "Commandid",
+            "type": "string"
+          },
+          "projectId": {
+            "description": "Owning project ID.",
+            "format": "uuid",
+            "title": "Projectid",
+            "type": "string"
+          },
+          "type": {
+            "const": "canvas.configureText",
+            "description": "Command discriminator.",
+            "title": "Type",
+            "type": "string"
+          },
+          "expectedVersions": {
+            "default": [],
+            "description": "Current versions of mutated existing objects; payload revision fields do not replace these.",
+            "items": {
+              "$ref": "#/$defs/ObjectVersion"
+            },
+            "title": "Expectedversions",
+            "type": "array"
+          },
+          "expectedPreview": {
+            "anyOf": [
+              {
+                "pattern": "^[0-9a-f]{64}$",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "description": "Fingerprint of the confirmed impact preview.",
+            "title": "Expectedpreview"
+          },
+          "payload": {
+            "$ref": "#/$defs/CanvasTextConfigure",
+            "description": "Set text rendering format and submitted HTML interaction state."
+          }
+        },
+        "required": [
+          "commandId",
+          "projectId",
+          "type",
+          "expectedVersions",
+          "expectedPreview",
+          "payload"
+        ],
+        "title": "CanvasTextConfigureCommand",
+        "type": "object"
+      },
+      "CanvasTextConfigureCommandOperation": {
+        "additionalProperties": false,
+        "description": "Set text rendering format and submitted HTML interaction state.",
+        "properties": {
+          "type": {
+            "const": "canvas.configureText",
+            "description": "Operation discriminator.",
+            "title": "Type",
+            "type": "string"
+          },
+          "payload": {
+            "$ref": "#/$defs/CanvasTextConfigure",
+            "description": "Set text rendering format and submitted HTML interaction state."
+          }
+        },
+        "required": [
+          "type",
+          "payload"
+        ],
+        "title": "CanvasTextConfigureCommandOperation",
+        "type": "object"
+      },
       "CanvasUpdateCommand": {
         "additionalProperties": false,
         "description": "Update canvas presentation, grouping or lock state.",
@@ -19904,6 +20191,7 @@
                 "canvas.applyVersion": "#/$defs/NodeVersionApplyCommand",
                 "canvas.attachEditor": "#/$defs/CanvasEditorAttachCommand",
                 "canvas.configure": "#/$defs/CanvasConfigureCommand",
+                "canvas.configureText": "#/$defs/CanvasTextConfigureCommand",
                 "canvas.createGeneration": "#/$defs/CanvasCreateGenerationCommand",
                 "canvas.detachEditor": "#/$defs/CanvasEditorDetachCommand",
                 "canvas.hide": "#/$defs/CanvasHideCommand",
@@ -19977,6 +20265,9 @@
               },
               {
                 "$ref": "#/$defs/CanvasUpdateCommand"
+              },
+              {
+                "$ref": "#/$defs/CanvasTextConfigureCommand"
               },
               {
                 "$ref": "#/$defs/CanvasHideCommand"
@@ -28750,6 +29041,24 @@
             },
             "title": "Editors",
             "type": "array"
+          },
+          "textFormat": {
+            "default": "markdown",
+            "description": "Text rendering format; HTML runs in an isolated iframe.",
+            "enum": [
+              "markdown",
+              "html"
+            ],
+            "title": "Textformat",
+            "type": "string"
+          },
+          "htmlState": {
+            "additionalProperties": {
+              "$ref": "#/$defs/JsonValue"
+            },
+            "description": "Last explicitly submitted HTML interaction state.",
+            "title": "Htmlstate",
+            "type": "object"
           }
         },
         "required": [
@@ -28775,6 +29084,16 @@
       "TextExecution": {
         "additionalProperties": false,
         "properties": {
+          "outputFormat": {
+            "default": "markdown",
+            "description": "Generated text format. HTML uses the controlled interaction bridge.",
+            "enum": [
+              "markdown",
+              "html"
+            ],
+            "title": "Outputformat",
+            "type": "string"
+          },
           "thinking": {
             "default": "auto",
             "description": "Requested reasoning effort.",
@@ -28990,6 +29309,16 @@
       "TextParameters": {
         "additionalProperties": false,
         "properties": {
+          "outputFormat": {
+            "default": "markdown",
+            "description": "Generated text format. HTML uses the controlled interaction bridge.",
+            "enum": [
+              "markdown",
+              "html"
+            ],
+            "title": "Outputformat",
+            "type": "string"
+          },
           "thinking": {
             "default": "auto",
             "description": "Requested reasoning effort.",
@@ -31782,6 +32111,7 @@
             "canvas.applyVersion": "#/$defs/NodeVersionApplyCommand",
             "canvas.attachEditor": "#/$defs/CanvasEditorAttachCommand",
             "canvas.configure": "#/$defs/CanvasConfigureCommand",
+            "canvas.configureText": "#/$defs/CanvasTextConfigureCommand",
             "canvas.createGeneration": "#/$defs/CanvasCreateGenerationCommand",
             "canvas.detachEditor": "#/$defs/CanvasEditorDetachCommand",
             "canvas.hide": "#/$defs/CanvasHideCommand",
@@ -31855,6 +32185,9 @@
           },
           {
             "$ref": "#/$defs/CanvasUpdateCommand"
+          },
+          {
+            "$ref": "#/$defs/CanvasTextConfigureCommand"
           },
           {
             "$ref": "#/$defs/CanvasHideCommand"

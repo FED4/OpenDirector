@@ -28,7 +28,18 @@ const ignoredDirectories = [
 ];
 
 export default defineConfig({
-  plugins: [react()],
+  plugins: [react(), {
+    name: "html-runtime-policy",
+    configureServer(server) {
+      server.middlewares.use((request, response, next) => {
+        const runtime = request.url?.split("?")[0] === "/html-runtime.html";
+        response.setHeader("Content-Security-Policy", runtime
+          ? "default-src 'none'; script-src 'unsafe-inline'; style-src 'unsafe-inline'; img-src data: blob:; font-src data:; connect-src 'none'; frame-src 'none'; worker-src 'none'; object-src 'none'; base-uri 'none'; form-action 'none'"
+          : `frame-src http://${request.headers.host}/html-runtime.html; object-src 'none'`);
+        next();
+      });
+    },
+  }],
   server: {
     host: "127.0.0.1",
     port: 5173,

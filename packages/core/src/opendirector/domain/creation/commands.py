@@ -2,7 +2,7 @@
 from typing import Annotated, Literal, Union
 from uuid import UUID
 
-from pydantic import ConfigDict, Field, TypeAdapter, create_model, model_validator
+from pydantic import JsonValue, ConfigDict, Field, TypeAdapter, create_model, model_validator
 
 from .assets import AssetRef, MediaMetadata
 from .base import Contract, Digest, GenerationKind, MediaKind, ObjectVersion, Point, Positive, Revision, digest, unique
@@ -111,6 +111,20 @@ class CanvasPresentationUpdate(Contract):
     locked: bool | None = Field(default=None, description='Whether edits to this object are blocked.')
     parentId: UUID | None = Field(default=None, description='Parent canvas group ID, or null for the root.')
     # Presence of parentId distinguishes retaining a group from ungrouping.
+
+
+class CanvasTextConfigure(Contract):
+    itemId: UUID = Field(description='Text canvas item ID; requires its current canvas_item version.')
+    textFormat: Literal['markdown', 'html'] = Field(description='Render Markdown or an isolated interactive HTML document.')
+    htmlState: dict[str, JsonValue] = Field(default_factory=dict, description='Explicitly submitted interaction state; maximum 64 KiB.')
+
+
+    @model_validator(mode='after')
+    def bounded_state(self):
+        import json
+        if len(json.dumps(self.htmlState, ensure_ascii=False).encode('utf-8')) > 65536:
+            raise ValueError('HTML interaction state must not exceed 64 KiB')
+        return self
 
 
 class CanvasHide(Contract):
@@ -297,7 +311,7 @@ class CommandBase(Contract):
             required = [('canvas_item', payload.itemId), ('asset', payload.asset.assetId), ('editor_document', payload.editorId)]
             if self.type == 'timeline.publishRender' and payload.expectedOutputRevision is not None:
                 required.append(('canvas_item', payload.outputId))
-        elif self.type in {'canvas.update', 'canvas.hide', 'canvas.materialize', 'canvas.applyEdit', 'canvas.configure', 'canvas.attachEditor', 'canvas.detachEditor', 'canvas.applyVersion'}:
+        elif self.type in {'canvas.configureText', 'canvas.update', 'canvas.hide', 'canvas.materialize', 'canvas.applyEdit', 'canvas.configure', 'canvas.attachEditor', 'canvas.detachEditor', 'canvas.applyVersion'}:
             required = [('canvas_item', payload.itemId)]
         elif self.type == 'canvas.move':
             required = [('canvas_item', item.itemId) for item in payload.items]
@@ -337,6 +351,7 @@ _COMMANDS = (
     ('CanvasShowCommand', 'canvas.show', CanvasShow, 'Create or restore a canvas display item.'),
     ('CanvasMoveCommand', 'canvas.move', CanvasMove, 'Move one or more canvas items.'),
     ('CanvasUpdateCommand', 'canvas.update', CanvasPresentationUpdate, 'Update canvas presentation, grouping or lock state.'),
+    ('CanvasTextConfigureCommand', 'canvas.configureText', CanvasTextConfigure, 'Set text rendering format and submitted HTML interaction state.'),
     ('CanvasHideCommand', 'canvas.hide', CanvasHide, 'Remove a canvas item; preserves project contents. Remove all visible items to clear the canvas.'),
     ('CanvasMaterializeCommand', 'canvas.materialize', CanvasMaterialize, 'Bind an asset to an empty or material canvas item.'),
     ('CanvasApplyEditCommand', 'canvas.applyEdit', CanvasApplyEdit, 'Apply an editor result to a canvas item.'),
@@ -371,7 +386,7 @@ for _name, _type, _payload, _description in _COMMANDS:
     COMMAND_MODELS[_type] = _model
     globals()[_name] = _model
 
-_BATCH_TYPES = {'canvas.show', 'canvas.move', 'canvas.update', 'canvas.hide', 'canvas.materialize', 'canvas.applyEdit',
+_BATCH_TYPES = {'canvas.configureText', 'canvas.show', 'canvas.move', 'canvas.update', 'canvas.hide', 'canvas.materialize', 'canvas.applyEdit',
                 'canvas.configure', 'canvas.attachEditor', 'canvas.detachEditor', 'generationSpec.create', 'generationSpec.update',
                 'reference.add', 'reference.update', 'reference.restore', 'reference.remove', 'editor.create', 'editor.save', 'result.select', 'generationSpec.setPrompt'}
 _OPERATIONS = tuple(create_model(name + 'Operation', __base__=Contract,

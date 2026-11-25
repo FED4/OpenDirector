@@ -1,6 +1,6 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { eventSchema, proxyRequest } from '../src/host.mjs';
+import { eventSchema, proxyRequest, ownedURL } from '../src/host.mjs';
 import { messages } from '../src/locale.mjs';
 import { registerCommand } from '../src/command.mjs';
 import { mkdtemp, readlink, rm, writeFile, readFile } from 'node:fs/promises';
@@ -115,4 +115,22 @@ test('Proxy can forward the first upload chunk before the producer finishes', as
     cancellation.abort();
     await forwarded;
   }
+});
+
+test('HTML iframe gets an isolated policy without relaxing the main application scripts', async () => {
+  const host = {url:'http://127.0.0.1:23456', token:'private'};
+  const fetcher = async () => new Response('<!doctype html>', {headers:{'content-type':'text/html'}});
+  const main = await proxyRequest(new Request('opendirector://app/'), host, fetcher);
+  const frame = await proxyRequest(new Request('opendirector://app/html-runtime.html'), host, fetcher);
+  assert.match(main.headers.get('content-security-policy'), /script-src 'self' 'wasm-unsafe-eval'/);
+  assert.match(main.headers.get('content-security-policy'), /frame-src opendirector:\/\/app\/html-runtime.html/);
+  assert.match(frame.headers.get('content-security-policy'), /connect-src 'none'/);
+  assert.match(frame.headers.get('content-security-policy'), /default-src 'none'/);
+  assert.doesNotMatch(frame.headers.get('content-security-policy'), /'self'/);
+});
+
+test('Desktop trust checks reject startup and detached-frame URLs without throwing', () => {
+  for (const value of ['', undefined, null, 'not a URL', 'about:blank', 'https://example.com'])
+    assert.equal(ownedURL(value), false);
+  assert.equal(ownedURL('opendirector://app/'), true);
 });

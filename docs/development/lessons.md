@@ -112,3 +112,10 @@ When work exposes a consequential risk or a recurring problem, add a lesson or u
 - **Lesson:** [Issue #302](https://github.com/ThinkFlowLab/OpenDirector/issues/302) identified four citation groups whose Unicode private-use delimiters and internal source IDs were displayed as text. The native and persisted replies agreed byte for byte; intact text transport did not establish usable presentation.
 - **Check:** Verify the source metadata as well as reply text, multiple citations, split streaming markers, history reopening, copying and missing-source fallback. Preserve raw execution evidence and tool offsets; leave literal code examples unchanged and inspect both interface languages in the browser.
 - **Presentation follow-up:** The source-link UI in #302 initially inherited a library modal's utility classes without the corresponding CSS. Text and click checks passed while the border and close-button positioning failed. Use the supported custom renderer with repository-owned styles, and check computed styles, element geometry, long URLs, keyboard close and focus restoration as well as translated text.
+
+
+## An embedded runtime may finish loading before passive effects
+
+- **Trigger:** Initializing an HTML iframe through a message channel, then replacing its document with generated content.
+- **Evidence:** Validation of the local prototype for [#443](https://github.com/ThinkFlowLab/OpenDirector/issues/443) required packaged Electron coverage as well as Chromium. Source review identified a possible ordering issue: resetting the initialization guard in a passive effect could allow the document replacement's second load event to create another, unconnected channel. The exact event order behind individual native test failures was not established.
+- **Check:** Reset channel lifecycle state synchronously at commit and close old ports at teardown. Run `apps/desktop/scripts/html-smoke.mjs` against a packaged executable, including repeated save/reload, rather than treating HTML rendering alone as evidence that actions work. `OPENDIRECTOR_DESKTOP_BINARY` selects the binary; the script uses an isolated temporary profile.

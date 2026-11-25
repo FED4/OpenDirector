@@ -1,0 +1,20 @@
+export const html = {
+  "html.loading": "正在加载交互内容…",
+  "html.outputFormat": "输出格式",
+  "html.interactive": "交互式 HTML",
+  "html.frame": "交互式 HTML 内容",
+  "html.source": "编辑源码",
+  "html.review": "确认交互结果",
+  "html.save": "保存结果",
+  "html.compose": "添加到对话草稿",
+  "html.dismiss": "取消",
+  "html.saved": "结果已保存",
+  "html.composed": "已添加到对话草稿",
+  "html.saving": "保存中…",
+  "html.unavailable": "此 HTML 操作不可用，或节点已锁定。",
+  "html.saveFailed": "交互结果保存失败，请检查项目后重试。",
+  "html.invalid": "不支持的 HTML 操作或无效数据。",
+  "html.busy": "另一个交互结果正在等待确认。",
+  "html.cancelled": "已取消此次交互。",
+  "html.limit": "交互数据必须为不超过 64 KiB 的 JSON 对象。"
+} as const;

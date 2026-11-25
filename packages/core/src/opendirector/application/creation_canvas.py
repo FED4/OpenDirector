@@ -554,6 +554,11 @@ class CreationCanvas:
         elif kind == 'canvas.update':
             item = self._editable(data, payload.itemId, unlocking=value.get('locked') is False)
             item.update({key: val for key, val in value.items() if key != 'itemId' and (val is not None or key == 'parentId')})
+        elif kind == 'canvas.configureText':
+            item = self._editable(data, payload.itemId)
+            if item['kind'] != 'text':
+                raise ContractError('invalid_input', 'HTML settings require a text canvas item.', payload.itemId)
+            item.update(textFormat=payload.textFormat, htmlState=payload.htmlState)
         elif kind == 'canvas.hide':
             self._editable(data, payload.itemId)['visible'] = False
         elif kind == 'canvas.materialize':

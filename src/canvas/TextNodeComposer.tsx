@@ -123,6 +123,15 @@ export function TextNodeComposer({
       </div>
       <div className="cw-composer-footer">
         <div className="cw-composer-options">
+          <select aria-label={t("html.outputFormat")} value={node.data.textFormat ?? "markdown"}
+            disabled={running} onChange={(event) => {
+              const outputFormat = event.target.value as "markdown" | "html";
+              onUpdate({ textFormat: outputFormat,
+                agentSettings: { ...settings, modelConfigId: selected, outputFormat } });
+            }}>
+            <option value="markdown">Markdown</option>
+            <option value="html">{t("html.interactive")}</option>
+          </select>
           <div className="cw-model-select">
             <select
               aria-label={t("generation.model.agent")}
