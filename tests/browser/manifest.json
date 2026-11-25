@@ -153,6 +153,11 @@
       ]
     },
     {
+      "file": "text_modify.mjs",
+      "lanes": ["extended"],
+      "note": "Modify/regenerate UI, unsaved-source pinning and retained node history; uses /src through Vite."
+    },
+    {
       "file": "canvas_text_markdown.mjs",
       "lanes": ["gate"],
       "note": "Markdown blocks, native inline composition, fullscreen selection/scroll handoff and resize commits. Uses /src through Vite."

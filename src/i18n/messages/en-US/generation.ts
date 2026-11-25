@@ -1,5 +1,6 @@
 /** Composer, generation state, model choice and generation rules. */
 export const generation = {
+  "generation.text.sourcePreview": "Current text included in Modify",
   "generation.text.operation": "Text operation",
   "generation.text.regenerate": "Regenerate",
   "generation.text.modify": "Modify current text",

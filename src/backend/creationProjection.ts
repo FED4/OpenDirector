@@ -933,6 +933,7 @@ export class CreationProjection {
   private specInput(
     node: CanvasNode,
     current?: GenerationSpec,
+    textSource?: AssetRef,
   ): GenerationSpecInput {
     const common = {
       id: current?.id ?? crypto.randomUUID(),
@@ -957,7 +958,7 @@ export class CreationProjection {
             sourceAsset: node.data.agentSettings?.operation === "modify"
               ? (() => {
                   const asset = this.client.snapshot.assets.find(asset => asset.id === node.data.backendAssetId);
-                  return asset ? assetReference(asset) : null;
+                  return textSource ?? (asset ? assetReference(asset) : null);
                 })() : null,
             thinking: node.data.agentSettings?.thinking ?? "auto",
             maxTokens:
@@ -1487,7 +1488,7 @@ export class CreationProjection {
             cloneGeneration
           ) {
             const spec = {
-              ...this.specInput(node, current),
+              ...this.specInput(node, current, binding?.role === "material" ? binding.objectRef : binding?.role === "generation" ? binding.materialOverride ?? undefined : undefined),
               ...(cloneGeneration ? { purpose: "generation" as const } : {}),
             };
             specs.set(node.id, spec.id);

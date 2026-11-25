@@ -1,5 +1,6 @@
 /** Composer, generation state, model choice and generation rules. */
 export const generation = {
+  "generation.text.sourcePreview": "修改时携带的当前正文",
   "generation.text.operation": "文本操作",
   "generation.text.regenerate": "重新生成",
   "generation.text.modify": "修改当前正文",

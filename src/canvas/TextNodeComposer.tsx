@@ -77,6 +77,10 @@ export function TextNodeComposer({
       onEscape={() => setPanel(null)}
     >
       <div className="cw-composer-body">
+        {settings.operation === "modify" && <details>
+          <summary>{t("generation.text.sourcePreview")}</summary>
+          <pre style={{maxHeight: 180, overflow: "auto", whiteSpace: "pre-wrap"}}>{node.data.text}</pre>
+        </details>}
         {incoming.length > 0 && (
           <div className="cw-reference-strip">
             <TooltipButton

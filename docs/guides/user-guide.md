@@ -204,3 +204,10 @@ Saving projects locally does not imply offline inference. Generation prompts and
 ### Output a timeline from the canvas
 
 Select an unlocked timeline node and use **Output video** in its toolbar. **⌘Enter** on macOS or **Ctrl+Enter** on Windows/Linux performs the same action when focus is outside a text field or dialog. The saved timeline supplies the output size, frame rate, clips and audio. A pending video node appears below the timeline immediately, with rendering progress and a cancel control. Successful publication replaces that preview with the playable MP4 under the same node identity, connected to its timeline by an output-source line. Repeated output adds a version to that video node; use its version picker to preview or restore earlier outputs. The editable timeline remains available. Failed output can be retried from the pending node. Keep the page open while rendering. Cancel stops rendering; retrying a failed publication reuses the rendered video and operation identity.
+
+
+## Modify or regenerate text
+
+Choose the Text operation explicitly: Regenerate uses the prompt and explicit references; Modify current text also includes a pinned version of the current document. Expand the source preview before submission. Regenerate remains the default. Results replace the display only while the accepted inputs and adoption state remain current. Editing during generation keeps the result as a candidate, preserving the newer text. Prior text is accessible through node history.
+
+Agent/CLI submissions use the same services: set text parameters `operation: "modify"` with `sourceAsset` equal to the current text asset reference, and submit with the origin item and current expected versions. Missing or stale edit sources are rejected. Regenerate omits the implicit source. Accepted job snapshots retain the original asset independently of later edits.
